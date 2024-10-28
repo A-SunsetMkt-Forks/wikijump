@@ -9,8 +9,8 @@ importers:
   .:
     dependencies:
       '@sveltejs/adapter-node':
-        specifier: ^5.2.6
-        version: 5.2.6(@sveltejs/kit@2.7.3(@sveltejs/vite-plugin-svelte@3.1.2(svelte@4.2.19)(vite@5.4.10(@types/node@22.7.7)(sass@1.80.4)))(svelte@4.2.19)(vite@5.4.10(@types/node@22.7.7)(sass@1.80.4)))
+        specifier: ^5.2.9
+        version: 5.2.9(@sveltejs/kit@2.7.3(@sveltejs/vite-plugin-svelte@3.1.2(svelte@4.2.19)(vite@5.4.10(@types/node@22.7.7)(sass@1.80.4)))(svelte@4.2.19)(vite@5.4.10(@types/node@22.7.7)(sass@1.80.4)))
       '@sveltejs/kit':
         specifier: ^2.7.3
         version: 2.7.3(@sveltejs/vite-plugin-svelte@3.1.2(svelte@4.2.19)(vite@5.4.10(@types/node@22.7.7)(sass@1.80.4)))(svelte@4.2.19)(vite@5.4.10(@types/node@22.7.7)(sass@1.80.4))
@@ -25,7 +25,7 @@ importers:
         version: 4.2.19
       svelte-check:
         specifier: ^4.0.2
-        version: 4.0.2(picomatch@2.3.1)(svelte@4.2.19)(typescript@5.6.3)
+        version: 4.0.2(picomatch@4.0.2)(svelte@4.2.19)(typescript@5.6.3)
       svelte-preprocess:
         specifier: ^6.0.3
         version: 6.0.3(postcss-load-config@3.1.4(postcss@8.4.47))(postcss@8.4.47)(sass@1.80.4)(svelte@4.2.19)(typescript@5.6.3)
@@ -450,8 +450,8 @@ packages:
   '@polka/url@1.0.0-next.28':
     resolution: {integrity: sha512-8LduaNlMZGwdZ6qWrKlfa+2M4gahzFkprZiAt2TF8uS0qQgBizKXpXURqvTJ4WtmupWxaLqjRb2UCTe72mu+Aw==}
 
-  '@rollup/plugin-commonjs@28.0.0':
-    resolution: {integrity: sha512-BJcu+a+Mpq476DMXG+hevgPSl56bkUoi88dKT8t3RyUp8kGuOh+2bU8Gs7zXDlu+fyZggnJ+iOBGrb/O1SorYg==}
+  '@rollup/plugin-commonjs@28.0.1':
+    resolution: {integrity: sha512-+tNWdlWKbpB3WgBN7ijjYkq9X5uhjmcvyjEght4NmH5fAU++zfQzAJ6wumLS+dNcvwEZhKx2Z+skY8m7v0wGSA==}
     engines: {node: '>=16.0.0 || 14 >= 14.17'}
     peerDependencies:
       rollup: ^2.68.0||^3.0.0||^4.0.0
@@ -566,8 +566,8 @@ packages:
     cpu: [x64]
     os: [win32]
 
-  '@sveltejs/adapter-node@5.2.6':
-    resolution: {integrity: sha512-FT9MDduZT2srUz/gDFFhQ3U2Mp9reZ3xJdJBEhr/lk+dkieSSpdgIDNNbMkm84hTaXXiC7f4cPNk8fB5nT3N2g==}
+  '@sveltejs/adapter-node@5.2.9':
+    resolution: {integrity: sha512-51euNrx0AcaTu8//wDfVh7xmqQSVgU52rfinE/MwvGkJa4nHPJMHmzv6+OIpmxg7gZaF6+5NVlxnieCzxLD59g==}
     peerDependencies:
       '@sveltejs/kit': ^2.4.0
 
@@ -1507,6 +1507,10 @@ packages:
     resolution: {integrity: sha512-JU3teHTNjmE2VCGFzuY8EXzCDVwEqB2a8fsIvwaStHhAWJEeVd1o1QD80CU6+ZdEXXSLbSsuLwJjkCBWqRQUVA==}
     engines: {node: '>=8.6'}
 
+  picomatch@4.0.2:
+    resolution: {integrity: sha512-M7BAV6Rlcy5u+m6oPhAPFgJTzAioX/6B0DxyvDlo9l8+T3nLKbrczg2WLUyzd45L8RqfUMyGPzekbMvX2Ldkwg==}
+    engines: {node: '>=12'}
+
   playwright-core@1.48.0:
     resolution: {integrity: sha512-RBvzjM9rdpP7UUFrQzRwR8L/xR4HyC1QXMzGYTbf1vjw25/ya9NRAVnXi/0fvFopjebvyPzsmoK58xxeEOaVvA==}
     engines: {node: '>=18'}
@@ -2190,15 +2194,15 @@ snapshots:
 
   '@polka/url@1.0.0-next.28': {}
 
-  '@rollup/plugin-commonjs@28.0.0(rollup@4.24.0)':
+  '@rollup/plugin-commonjs@28.0.1(rollup@4.24.0)':
     dependencies:
       '@rollup/pluginutils': 5.1.0(rollup@4.24.0)
       commondir: 1.0.1
       estree-walker: 2.0.2
-      fdir: 6.3.0(picomatch@2.3.1)
+      fdir: 6.3.0(picomatch@4.0.2)
       is-reference: 1.2.1
       magic-string: 0.30.11
-      picomatch: 2.3.1
+      picomatch: 4.0.2
     optionalDependencies:
       rollup: 4.24.0
 
@@ -2274,9 +2278,9 @@ snapshots:
   '@rollup/rollup-win32-x64-msvc@4.24.0':
     optional: true
 
-  '@sveltejs/adapter-node@5.2.6(@sveltejs/kit@2.7.3(@sveltejs/vite-plugin-svelte@3.1.2(svelte@4.2.19)(vite@5.4.10(@types/node@22.7.7)(sass@1.80.4)))(svelte@4.2.19)(vite@5.4.10(@types/node@22.7.7)(sass@1.80.4)))':
+  '@sveltejs/adapter-node@5.2.9(@sveltejs/kit@2.7.3(@sveltejs/vite-plugin-svelte@3.1.2(svelte@4.2.19)(vite@5.4.10(@types/node@22.7.7)(sass@1.80.4)))(svelte@4.2.19)(vite@5.4.10(@types/node@22.7.7)(sass@1.80.4)))':
     dependencies:
-      '@rollup/plugin-commonjs': 28.0.0(rollup@4.24.0)
+      '@rollup/plugin-commonjs': 28.0.1(rollup@4.24.0)
       '@rollup/plugin-json': 6.1.0(rollup@4.24.0)
       '@rollup/plugin-node-resolve': 15.3.0(rollup@4.24.0)
       '@sveltejs/kit': 2.7.3(@sveltejs/vite-plugin-svelte@3.1.2(svelte@4.2.19)(vite@5.4.10(@types/node@22.7.7)(sass@1.80.4)))(svelte@4.2.19)(vite@5.4.10(@types/node@22.7.7)(sass@1.80.4))
@@ -2823,9 +2827,9 @@ snapshots:
     dependencies:
       reusify: 1.0.4
 
-  fdir@6.3.0(picomatch@2.3.1):
+  fdir@6.3.0(picomatch@4.0.2):
     optionalDependencies:
-      picomatch: 2.3.1
+      picomatch: 4.0.2
 
   file-entry-cache@6.0.1:
     dependencies:
@@ -3305,6 +3309,8 @@ snapshots:
 
   picomatch@2.3.1: {}
 
+  picomatch@4.0.2: {}
+
   playwright-core@1.48.0: {}
 
   playwright@1.48.0:
@@ -3574,11 +3580,11 @@ snapshots:
 
   supports-preserve-symlinks-flag@1.0.0: {}
 
-  svelte-check@4.0.2(picomatch@2.3.1)(svelte@4.2.19)(typescript@5.6.3):
+  svelte-check@4.0.2(picomatch@4.0.2)(svelte@4.2.19)(typescript@5.6.3):
     dependencies:
       '@jridgewell/trace-mapping': 0.3.25
       chokidar: 3.5.3
-      fdir: 6.3.0(picomatch@2.3.1)
+      fdir: 6.3.0(picomatch@4.0.2)
       picocolors: 1.0.1
       sade: 1.8.1
       svelte: 4.2.19
