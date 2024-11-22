@@ -7,13 +7,14 @@ This is important because Wikidot exposes IDs in several places, such as forum U
 The approach used here is to set the starting ID value to be higher than Wikidot in production will ever conceivably reach (at least before Wikijump is deployed). We did this by finding a recent ID value for that kind of object, and increasing its most significant digit by at least one value. For the most populous objects (pages and revisions), the produced value is higher than Wikidot could ever achieve, since they use only 32-bit integers for IDs.
 
 ```
-- Page           -- 3000000000 (sample       1331370625)
-- Revision       -- 3000000000 (sample       1388179085)
-- Page Category  --  100000000 (sample         43202888)
-- Forum Post     --    7000000 (sample          5174477)
-- Forum Thread   --   30000000 (sample         14447612)
+- Page           -- 3000000000 (sample       1457417979)
+- Revision       -- 3000000000 (sample       1525918930)
+- Page Category  --  100000000 (sample         44073660)
+- Forum Post     --    7000000 (sample          6734911)
+- Forum Thread   --   30000000 (sample         16988888)
 - Forum Category --    9000000 (sample          7412040)
-- User           --   10000000 (sample          7840760)
+- User           --   20000000 (sample          9475151)
+- Site           --    6000000 (sample          4573998)
 ```
 
 (Note that forum groups are not included, as their IDs are not exposed by Wikidot.)
