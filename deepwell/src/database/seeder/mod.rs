@@ -271,7 +271,7 @@ pub async fn seed(state: &ServerState) -> Result<()> {
     //
     // See https://scuttle.atlassian.net/browse/WJ-964
 
-    restart_sequence_with(&txn, "user_user_id_seq", 10000000).await?;
+    restart_sequence_with(&txn, "user_user_id_seq", 20000000).await?;
     restart_sequence_with(&txn, "site_site_id_seq", 6000000).await?;
     restart_sequence_with(&txn, "page_page_id_seq", 3000000000).await?;
     restart_sequence_with(&txn, "page_revision_revision_id_seq", 3000000000).await?;
