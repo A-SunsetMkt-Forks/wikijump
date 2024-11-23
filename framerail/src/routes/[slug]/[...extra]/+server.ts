@@ -36,12 +36,15 @@ export async function POST(event) {
       let tags: string[] = []
       if (tagsStr?.length) tags = tagsStr.split(" ").filter((tag) => tag.length)
       let layout = data.get("layout")?.toString().trim()
+      let lastRevIdStr = data.get("last-revision-id")?.toString().trim()
+      let lastRevId = lastRevIdStr ? parseInt(lastRevIdStr) : null
 
       res = await page.pageEdit(
         siteId,
         pageId,
         session?.user_id,
         slug,
+        lastRevId,
         comments,
         wikitext,
         title,
@@ -61,8 +64,18 @@ export async function POST(event) {
       /** Move page to new slug. */
       let comments = data.get("comments")?.toString() ?? ""
       let newSlug = data.get("new-slug")?.toString()
+      let lastRevIdStr = data.get("last-revision-id")?.toString().trim()
+      let lastRevId = lastRevIdStr ? parseInt(lastRevIdStr) : null
 
-      res = await page.pageMove(siteId, pageId, session?.user_id, slug, newSlug, comments)
+      res = await page.pageMove(
+        siteId,
+        pageId,
+        session?.user_id,
+        slug,
+        lastRevId,
+        newSlug,
+        comments
+      )
     } else if (extra.includes("revision")) {
       let revisionNumberStr = data.get("revision-number")?.toString()
       let compiledHtml = data.get("compiled-html")?.toString() === "true"
@@ -80,12 +93,15 @@ export async function POST(event) {
       let revisionNumberStr = data.get("revision-number")?.toString()
       let revisionNumber = revisionNumberStr ? parseInt(revisionNumberStr) : null
       let comments = data.get("comments")?.toString() ?? ""
+      let lastRevIdStr = data.get("last-revision-id")?.toString().trim()
+      let lastRevId = lastRevIdStr ? parseInt(lastRevIdStr) : null
 
       res = await page.pageRollback(
         siteId,
         pageId,
         session?.user_id,
         slug,
+        lastRevId,
         revisionNumber,
         comments
       )
@@ -153,9 +169,18 @@ export async function DELETE(event) {
   let siteIdVal = data.get("site-id")?.toString()
   let siteId = siteIdVal ? parseInt(siteIdVal) : null
   let comments = data.get("comments")?.toString() ?? ""
+  let lastRevIdStr = data.get("last-revision-id")?.toString().trim()
+  let lastRevId = lastRevIdStr ? parseInt(lastRevIdStr) : null
 
   try {
-    let res = await page.pageDelete(siteId, pageId, session?.user_id, slug, comments)
+    let res = await page.pageDelete(
+      siteId,
+      pageId,
+      session?.user_id,
+      slug,
+      lastRevId,
+      comments
+    )
     return new Response(JSON.stringify(res))
   } catch (error) {
     return new Response(

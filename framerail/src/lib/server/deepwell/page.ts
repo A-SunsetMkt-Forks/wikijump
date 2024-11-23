@@ -8,12 +8,14 @@ export async function pageDelete(
   pageId: Optional<number>,
   userId: number,
   slug: string,
+  lastRevisionId: number,
   revisionComments: Optional<string>
 ): Promise<object> {
   return client.request("page_delete", {
     site_id: siteId,
     page: pageId ?? slug,
     user_id: userId,
+    last_revision_id: lastRevisionId,
     revision_comments: revisionComments
   })
 }
@@ -23,6 +25,7 @@ export async function pageEdit(
   pageId: Optional<number>,
   userId: number,
   slug: string,
+  lastRevisionId: Optional<number>,
   revisionComments: Optional<string>,
   wikitext: Optional<string>,
   title: Optional<string>,
@@ -35,6 +38,7 @@ export async function pageEdit(
     page: pageId ?? slug,
     slug,
     user_id: userId,
+    last_revision_id: lastRevisionId,
     revision_comments: revisionComments,
     wikitext,
     title,
@@ -67,6 +71,7 @@ export async function pageMove(
   pageId: Optional<number>,
   userId: number,
   slug: string,
+  lastRevisionId: number,
   newSlug: string,
   revisionComments: Optional<string>
 ): Promise<object> {
@@ -75,6 +80,7 @@ export async function pageMove(
     page: pageId ?? slug,
     new_slug: newSlug,
     user_id: userId,
+    last_revision_id: lastRevisionId,
     revision_comments: revisionComments
   })
 }
@@ -102,6 +108,7 @@ export async function pageRollback(
   pageId: Optional<number>,
   userId: number,
   slug: string,
+  lastRevisionId: number,
   revisionNumber: Optional<number>,
   revisionComments: Optional<string>
 ): Promise<object> {
@@ -109,6 +116,7 @@ export async function pageRollback(
     site_id: siteId,
     page: pageId ?? slug,
     user_id: userId,
+    last_revision_id: lastRevisionId,
     revision_number: revisionNumber ?? defaults.page.history.revisionNumber,
     revision_comments: revisionComments
   })
