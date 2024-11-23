@@ -1,5 +1,6 @@
 import { client } from "$lib/server/deepwell"
 import type { Optional } from "$lib/types"
+import { startBlobUpload, uploadToPresignUrl } from "./file"
 
 export async function userView(
   domain: string,
@@ -51,9 +52,10 @@ export async function userEdit(
   if (Array.isArray(params.locales) && params.locales.every((v) => typeof v === "string"))
     data.locales = params.locales
   if (params.avatar instanceof File && params.avatar.type.startsWith("image/")) {
-    let srcBuf = await params.avatar.arrayBuffer()
-    data.avatar = Buffer.from(srcBuf).toString("hex")
-  }
+    let presign = await startBlobUpload(userId, params.avatar.size)
+    await uploadToPresignUrl(presign.presign_url, params.avatar)
+    data.avatar_uploaded_blob_id = presign.pending_blob_id
+  } else if (params.avatar !== undefined && params.avatar === null) data.avatar = null
 
   return client.request("user_edit", {
     user: userId,

@@ -1,6 +1,6 @@
 import defaults from "$lib/defaults"
 import { parseAcceptLangHeader } from "$lib/locales"
-import { getFileByHash } from "$lib/server/deepwell/getFile"
+import { getFileByHash } from "$lib/server/deepwell/file"
 import { translate } from "$lib/server/deepwell/translate"
 import { userView } from "$lib/server/deepwell/user"
 import type { TranslateKeys } from "$lib/types"

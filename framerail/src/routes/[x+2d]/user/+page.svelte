@@ -2,6 +2,7 @@
   import Page from "./[slug]/page.svelte"
   import { page } from "$app/stores"
   import { useErrorPopup } from "$lib/stores"
+  import { invalidateAll } from "$app/navigation"
   let showErrorPopup = useErrorPopup()
 
   let isEdit = false
@@ -26,7 +27,7 @@
       })
     } else {
       isEdit = false
-      $page.data.user = res
+      invalidateAll()
     }
   }
 </script>
