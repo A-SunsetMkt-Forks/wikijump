@@ -26,6 +26,7 @@
     let fdata = new FormData()
     fdata.set("site-id", $page.data.site.site_id)
     fdata.set("page-id", $page.data.page.page_id)
+    fdata.set("last-revision-id", $page.data.page_revision.revision_id)
     let res = await fetch(`/${$page.data.page.slug}`, {
       method: "DELETE",
       body: fdata
@@ -62,6 +63,7 @@
     let fdata = new FormData(form)
     fdata.set("site-id", $page.data.site.site_id)
     fdata.set("page-id", $page.data.page.page_id)
+    fdata.set("last-revision-id", $page.data.page_revision.revision_id)
     let res = await fetch(`/${$page.data.page.slug}/edit`, {
       method: "POST",
       body: fdata
@@ -91,6 +93,7 @@
     }
     fdata.set("site-id", $page.data.site.site_id)
     fdata.set("page-id", $page.data.page.page_id)
+    fdata.set("last-revision-id", $page.data.page_revision.revision_id)
     let res = await fetch(`/${$page.data.page.slug}/move`, {
       method: "POST",
       body: fdata
@@ -257,6 +260,7 @@
     fdata.set("site-id", $page.data.site.site_id)
     fdata.set("page-id", $page.data.page.page_id)
     fdata.set("revision-number", revisionNumber)
+    fdata.set("last-revision-id", $page.data.page_revision.revision_id)
     if (comments !== undefined) fdata.set("comments", comments)
     let res = await fetch(`/${$page.data.page.slug}/rollback`, {
       method: "POST",
