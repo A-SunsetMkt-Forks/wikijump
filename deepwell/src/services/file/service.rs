@@ -72,7 +72,7 @@ impl FileService {
 
         // Finish blob upload
         let FinalizeBlobUploadOutput {
-            hash: s3_hash,
+            s3_hash,
             mime: mime_hint,
             size: size_hint,
             created: blob_created,
@@ -157,7 +157,7 @@ impl FileService {
             Maybe::Unset => Maybe::Unset,
             Maybe::Set(ref id) => {
                 let FinalizeBlobUploadOutput {
-                    hash: s3_hash,
+                    s3_hash,
                     mime: mime_hint,
                     size: size_hint,
                     created: blob_created,
@@ -276,6 +276,28 @@ impl FileService {
     /// to be easily reverted.
     pub async fn delete(
         ctx: &ServiceContext<'_>,
+        input: DeleteFile<'_>,
+    ) -> Result<DeleteFileOutput> {
+        Self::delete_inner(ctx, input, false).await
+    }
+
+    /// Deletes this file, erasing its S3 hash in the tombstone revision.
+    ///
+    /// This is used as part of the hard deletion implementation, in the step
+    /// prior to erasing and hiding the S3 hash in all affected files.
+    pub async fn delete_with_erased_s3_hash(
+        ctx: &ServiceContext<'_>,
+        input: DeleteFile<'_>,
+    ) -> Result<DeleteFileOutput> {
+        Self::delete_inner(ctx, input, true).await
+    }
+
+    /// Performs a file deletion.
+    ///
+    /// Contains a flag for determining if the S3 hash of the file being deleted should be wiped,
+    /// as part of the hard deletion implementation.
+    async fn delete_inner(
+        ctx: &ServiceContext<'_>,
         DeleteFile {
             last_revision_id,
             revision_comments,
@@ -284,6 +306,7 @@ impl FileService {
             file: reference,
             user_id,
         }: DeleteFile<'_>,
+        erase_s3_hash: bool,
     ) -> Result<DeleteFileOutput> {
         let txn = ctx.transaction();
 
@@ -312,7 +335,8 @@ impl FileService {
                 page_id,
                 file_id,
                 user_id,
-                comments: revision_comments,
+                revision_comments,
+                erase_s3_hash,
             },
             last_revision,
         )
@@ -384,7 +408,7 @@ impl FileService {
                 user_id,
                 new_page_id,
                 new_name: new_name.clone(),
-                comments: revision_comments,
+                revision_comments,
             },
             last_revision,
         )

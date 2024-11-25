@@ -22,7 +22,7 @@ use super::prelude::*;
 use crate::hash::slice_to_blob_hash;
 use crate::services::blob::{
     BlobMetadata, CancelBlobUpload, GetBlobOutput, HardDelete, HardDeleteOutput,
-    HardDeletionStats, StartBlobUpload, StartBlobUploadOutput,
+    StartBlobUpload, StartBlobUploadOutput,
 };
 use crate::services::Result;
 use crate::types::Bytes;
@@ -83,13 +83,13 @@ pub async fn blob_blacklist_add(
 ) -> Result<()> {
     #[derive(Deserialize, Debug)]
     struct AddBlacklist {
-        hash: Bytes<'static>,
+        s3_hash: Bytes<'static>,
         user_id: i64,
     }
 
-    let AddBlacklist { hash, user_id } = params.parse()?;
-    let hash = slice_to_blob_hash(hash.as_ref());
-    BlobService::add_blacklist(ctx, hash, user_id).await
+    let AddBlacklist { s3_hash, user_id } = params.parse()?;
+    let s3_hash = slice_to_blob_hash(s3_hash.as_ref());
+    BlobService::add_blacklist(ctx, s3_hash, user_id).await
 }
 
 pub async fn blob_blacklist_remove(
@@ -98,12 +98,12 @@ pub async fn blob_blacklist_remove(
 ) -> Result<()> {
     #[derive(Deserialize, Debug)]
     struct RemoveBlacklist {
-        hash: Bytes<'static>,
+        s3_hash: Bytes<'static>,
     }
 
-    let RemoveBlacklist { hash } = params.parse()?;
-    let hash = slice_to_blob_hash(hash.as_ref());
-    BlobService::remove_blacklist(ctx, hash).await
+    let RemoveBlacklist { s3_hash } = params.parse()?;
+    let s3_hash = slice_to_blob_hash(s3_hash.as_ref());
+    BlobService::remove_blacklist(ctx, s3_hash).await
 }
 
 pub async fn blob_blacklist_check(
@@ -112,29 +112,29 @@ pub async fn blob_blacklist_check(
 ) -> Result<bool> {
     #[derive(Deserialize, Debug)]
     struct HasBlacklist {
-        hash: Bytes<'static>,
+        s3_hash: Bytes<'static>,
     }
 
-    let HasBlacklist { hash } = params.parse()?;
-    let hash = slice_to_blob_hash(hash.as_ref());
-    BlobService::on_blacklist(ctx, hash).await
+    let HasBlacklist { s3_hash } = params.parse()?;
+    let s3_hash = slice_to_blob_hash(s3_hash.as_ref());
+    BlobService::on_blacklist(ctx, s3_hash).await
 }
 
-pub async fn file_hard_delete_list(
+pub async fn blob_hard_delete_list(
     ctx: &ServiceContext<'_>,
     params: Params<'static>,
-) -> Result<HardDeletionStats> {
+) -> Result<HardDeleteOutput> {
     #[derive(Deserialize, Debug)]
     struct HardDeleteList {
-        hash: Bytes<'static>,
+        s3_hash: Bytes<'static>,
     }
 
-    let HardDeleteList { hash } = params.parse()?;
-    let s3_hash = slice_to_blob_hash(hash.as_ref());
+    let HardDeleteList { s3_hash } = params.parse()?;
+    let s3_hash = slice_to_blob_hash(s3_hash.as_ref());
     BlobService::hard_delete_list(ctx, s3_hash).await
 }
 
-pub async fn file_hard_delete(
+pub async fn blob_hard_delete(
     ctx: &ServiceContext<'_>,
     params: Params<'static>,
 ) -> Result<HardDeleteOutput> {

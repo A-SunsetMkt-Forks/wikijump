@@ -262,7 +262,8 @@ impl FileRevisionService {
             page_id,
             file_id,
             user_id,
-            comments,
+            revision_comments,
+            erase_s3_hash,
         }: CreateTombstoneFileRevision,
         previous: FileRevisionModel,
     ) -> Result<CreateFileRevisionOutput> {
@@ -271,12 +272,17 @@ impl FileRevisionService {
 
         let FileRevisionModel {
             name,
-            s3_hash,
+            mut s3_hash,
             mime_hint,
             size_hint,
             licensing,
             ..
         } = previous;
+
+        if erase_s3_hash {
+            // Replace S3 hash for tombstone revision with empty data
+            s3_hash.copy_from_slice(&EMPTY_BLOB_HASH);
+        }
 
         // Run outdater
         let page_slug = Self::get_page_slug(ctx, site_id, page_id).await?;
@@ -296,7 +302,7 @@ impl FileRevisionService {
             size_hint: Set(size_hint),
             licensing: Set(licensing),
             changes: Set(vec![]),
-            comments: Set(comments),
+            comments: Set(revision_comments),
             hidden: Set(vec![]),
             ..Default::default()
         };
@@ -335,7 +341,7 @@ impl FileRevisionService {
             user_id,
             new_page_id,
             new_name,
-            comments,
+            revision_comments,
         }: CreateResurrectionFileRevision,
         previous: FileRevisionModel,
     ) -> Result<CreateFileRevisionOutput> {
@@ -384,7 +390,7 @@ impl FileRevisionService {
             size_hint: Set(size_hint),
             licensing: Set(licensing),
             changes: Set(changes),
-            comments: Set(comments),
+            comments: Set(revision_comments),
             hidden: Set(vec![]),
             ..Default::default()
         };

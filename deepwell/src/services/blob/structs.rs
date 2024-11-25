@@ -46,7 +46,7 @@ pub struct CancelBlobUpload {
 
 #[derive(Debug)]
 pub struct FinalizeBlobUploadOutput {
-    pub hash: BlobHash,
+    pub s3_hash: BlobHash,
     pub mime: String,
     pub size: i64,
     pub created: bool,
@@ -60,20 +60,17 @@ pub struct HardDelete {
 
 #[derive(Serialize, Debug, Clone)]
 pub struct HardDeleteOutput {
-    pub revisions_affected: u64,
-}
-
-#[derive(Serialize, Debug, Clone)]
-pub struct HardDeletionStats {
-    pub total_revisions: i64,
-    pub total_files: i64,
-    pub total_pages: i64,
-    pub total_sites: i64,
-    pub total_users: i64,
-    pub sample_files: Vec<String>,
-    pub sample_pages: Vec<String>,
-    pub sample_sites: Vec<String>,
-    pub sample_users: Vec<String>,
+    pub total_revisions: usize,
+    pub total_files: usize,
+    pub total_files_deleted: usize,
+    pub total_pages: usize,
+    pub total_sites: usize,
+    pub total_users: u64,
+    pub sample_revision_ids: Vec<i64>,
+    pub sample_file_ids: Vec<i64>,
+    pub sample_page_ids: Vec<i64>,
+    pub sample_site_ids: Vec<i64>,
+    pub sample_user_ids: Vec<i64>,
 }
 
 #[derive(Debug)]

@@ -19,6 +19,7 @@
  */
 
 use super::prelude::*;
+use crate::constants::SYSTEM_USER_ID;
 use crate::hash::slice_to_blob_hash;
 use crate::models::blob_blacklist::{
     self, Entity as BlobBlacklist, Model as BlobBlacklistModel,
@@ -33,6 +34,7 @@ use crate::models::file_revision::{
 use crate::models::page::{self, Entity as Page, Model as PageModel};
 use crate::models::site::{self, Entity as Site, Model as SiteModel};
 use crate::models::user::{self, Entity as User, Model as UserModel};
+use crate::services::file::{DeleteFile, FileService};
 use crate::utils::assert_is_csprng;
 use bytes::Bytes;
 use cuid2::cuid;
@@ -41,12 +43,20 @@ use rand::distributions::{Alphanumeric, DistString};
 use rand::thread_rng;
 use s3::request::request_trait::ResponseData;
 use s3::serde_types::HeadObjectResult;
-use sea_orm::{prelude::*, TransactionTrait};
-use std::collections::HashMap;
+use sea_orm::{
+    prelude::*, DatabaseBackend, FromQueryResult, Statement, StreamTrait,
+    TransactionTrait, UpdateResult,
+};
+use sea_query::value::ArrayType;
+use std::collections::{HashMap, HashSet};
+use std::hash::Hash;
 use std::str;
 use std::sync::Arc;
 use time::format_description::well_known::Rfc2822;
 use time::{Duration, OffsetDateTime};
+
+/// How many samples to provide when providing hard deletion stats.
+const SAMPLE_COUNT: u16 = 10;
 
 /// Hash for empty blobs.
 ///
@@ -280,7 +290,7 @@ impl BlobService {
         if data.is_empty() {
             debug!("File being created is empty, special case");
             return Ok(FinalizeBlobUploadOutput {
-                hash: EMPTY_BLOB_HASH,
+                s3_hash: EMPTY_BLOB_HASH,
                 mime: str!(EMPTY_BLOB_MIME),
                 size: 0,
                 created: false,
@@ -292,8 +302,8 @@ impl BlobService {
         // Convert size to correct integer type
         let size: i64 = data.len().try_into().expect("Buffer size exceeds i64");
 
-        let hash = sha512_hash(&data);
-        let hex_hash = blob_hash_to_hex(&hash);
+        let s3_hash = sha512_hash(&data);
+        let hex_hash = blob_hash_to_hex(&s3_hash);
 
         // If the blob exists, then just delete the uploaded one.
         //
@@ -312,7 +322,7 @@ impl BlobService {
                 let mime = result.content_type.ok_or(Error::S3Response)?;
 
                 Ok(FinalizeBlobUploadOutput {
-                    hash,
+                    s3_hash,
                     mime,
                     size,
                     created: false,
@@ -334,7 +344,7 @@ impl BlobService {
                 // We assume all unexpected statuses are errors, even if 1XX or 2XX
                 match response.status_code() {
                     200 => Ok(FinalizeBlobUploadOutput {
-                        hash,
+                        s3_hash,
                         mime,
                         size,
                         created: true,
@@ -348,7 +358,7 @@ impl BlobService {
         // Update pending blob with hash
         let model = blob_pending::ActiveModel {
             external_id: Set(str!(pending_blob_id)),
-            s3_hash: Set(Some(hash.to_vec())),
+            s3_hash: Set(Some(s3_hash.to_vec())),
             ..Default::default()
         };
         model.update(txn).await?;
@@ -389,7 +399,7 @@ impl BlobService {
                 debug_assert_eq!(expected_length, size);
 
                 FinalizeBlobUploadOutput {
-                    hash: slice_to_blob_hash(&hash_vec),
+                    s3_hash: slice_to_blob_hash(&hash_vec),
                     mime,
                     size,
                     created: false,
@@ -408,120 +418,8 @@ impl BlobService {
     pub async fn hard_delete_list(
         ctx: &ServiceContext<'_>,
         s3_hash: BlobHash,
-    ) -> Result<HardDeletionStats> {
-        const SAMPLE_COUNT: u64 = 10;
-
-        let txn = ctx.transaction();
-        let s3_hash = s3_hash.as_slice();
-
-        // Get total count of affected revisions
-        let (total_revisions,) = FileRevision::find()
-            .select_only()
-            .expr(Expr::col(file_revision::Column::RevisionId).count())
-            .filter(file_revision::Column::S3Hash.eq(s3_hash))
-            .into_tuple()
-            .one(txn)
-            .await?
-            .unwrap_or((0,));
-
-        // Get count of affected files
-        let (total_files,) = FileRevision::find()
-            .select_only()
-            .expr(Expr::col(file_revision::Column::FileId).count_distinct())
-            .filter(file_revision::Column::S3Hash.eq(s3_hash))
-            .into_tuple()
-            .one(txn)
-            .await?
-            .unwrap_or((0,));
-
-        // Get count of affected pages
-        let (total_pages,) = FileRevision::find()
-            .select_only()
-            .expr(Expr::col(file_revision::Column::PageId).count_distinct())
-            .filter(file_revision::Column::S3Hash.eq(s3_hash))
-            .into_tuple()
-            .one(txn)
-            .await?
-            .unwrap_or((0,));
-
-        // Get count of affected sites
-        let (total_sites,) = FileRevision::find()
-            .select_only()
-            .expr(Expr::col(file_revision::Column::SiteId).count_distinct())
-            .filter(file_revision::Column::S3Hash.eq(s3_hash))
-            .into_tuple()
-            .one(txn)
-            .await?
-            .unwrap_or((0,));
-
-        // Get count of affected users
-        let (total_users,) = User::find()
-            .select_only()
-            .expr(Expr::col(user::Column::UserId).count_distinct())
-            .filter(user::Column::AvatarS3Hash.eq(s3_hash))
-            .into_tuple()
-            .one(txn)
-            .await?
-            .unwrap_or((0,));
-
-        // Get sample filenames
-        let sample_files: Vec<String> = FileRevision::find()
-            .join(JoinType::RightJoin, file_revision::Relation::File.def())
-            .select_only()
-            .expr(Expr::col((file::Entity, file::Column::Name)))
-            .filter(file_revision::Column::S3Hash.eq(s3_hash))
-            .distinct()
-            .limit(SAMPLE_COUNT)
-            .into_tuple()
-            .all(txn)
-            .await?;
-
-        // Get sample page slugs
-        let sample_pages: Vec<String> = FileRevision::find()
-            .join(JoinType::RightJoin, file_revision::Relation::Page.def())
-            .select_only()
-            .expr(Expr::col((page::Entity, page::Column::Slug)))
-            .filter(file_revision::Column::S3Hash.eq(s3_hash))
-            .distinct()
-            .limit(SAMPLE_COUNT)
-            .into_tuple()
-            .all(txn)
-            .await?;
-
-        // Get sample site slugs
-        let sample_sites: Vec<String> = FileRevision::find()
-            .join(JoinType::RightJoin, file_revision::Relation::Site.def())
-            .select_only()
-            .expr(Expr::col((site::Entity, site::Column::Slug)))
-            .filter(file_revision::Column::S3Hash.eq(s3_hash))
-            .distinct()
-            .limit(SAMPLE_COUNT)
-            .into_tuple()
-            .all(txn)
-            .await?;
-
-        // Get sample user slugs
-        let sample_users: Vec<String> = User::find()
-            .select_only()
-            .expr(Expr::col((user::Entity, user::Column::Slug)))
-            .filter(user::Column::AvatarS3Hash.eq(s3_hash))
-            .distinct()
-            .limit(SAMPLE_COUNT)
-            .into_tuple()
-            .all(txn)
-            .await?;
-
-        Ok(HardDeletionStats {
-            total_revisions,
-            total_files,
-            total_pages,
-            total_sites,
-            total_users,
-            sample_files,
-            sample_pages,
-            sample_sites,
-            sample_users,
-        })
+    ) -> Result<HardDeleteOutput> {
+        Self::hard_delete_inner(ctx, HardDeleteInner::DryRun { s3_hash }).await
     }
 
     /// Hard deletes the specified blob and all duplicates.
@@ -539,73 +437,210 @@ impl BlobService {
         ctx: &ServiceContext<'_>,
         HardDelete { s3_hash, user_id }: HardDelete,
     ) -> Result<HardDeleteOutput> {
-        let txn = ctx.transaction();
         let s3_hash = slice_to_blob_hash(s3_hash.as_ref());
+        Self::hard_delete_inner(ctx, HardDeleteInner::Commit { s3_hash, user_id }).await
+    }
+
+    /// Inner implementation, which runs the hard deletion procedure but may not actually delete.
+    ///
+    /// By running the actual deletion system, we can verify that the predicted set to delete is in
+    /// fact what will be deleted in a run.
+    async fn hard_delete_inner(
+        ctx: &ServiceContext<'_>,
+        input: HardDeleteInner,
+    ) -> Result<HardDeleteOutput> {
+        let txn = ctx.transaction();
+        let (s3_hash, deleter_user_id) = match input {
+            HardDeleteInner::Commit { s3_hash, user_id } => (s3_hash, Some(user_id)),
+            HardDeleteInner::DryRun { s3_hash } => (s3_hash, None),
+        };
+        // NOTE: Instead of an explicit "dry_run" variable, the value of "is real run"
+        //       or "is dry run" is derived from whether "deleter_user_id" is None or not.
+        //       If there's no user ID to record as responsible, it must necessarily
+        //       be a dry run.
 
         if s3_hash == EMPTY_BLOB_HASH {
             error!("Cannot hard delete the empty blob");
             return Err(Error::BadRequest);
         }
 
-        info!(
-            "Hard deleting all blobs matching hash {} (done by user ID {})",
-            blob_hash_to_hex(&s3_hash),
-            user_id,
+        let mut revisions = SamplerCounter::new();
+        let mut files = SamplerCounter::new();
+        let mut pages = SamplerCounter::new();
+        let mut sites = SamplerCounter::new();
+        let mut total_files_deleted = 0;
+
+        match deleter_user_id {
+            None => info!(
+                "Checking result of hard deletion of all blobs matching hash {}",
+                blob_hash_to_hex(&s3_hash),
+            ),
+            Some(user_id) => {
+                info!(
+                    "Hard deleting all blobs matching hash {} (done by user ID {})",
+                    blob_hash_to_hex(&s3_hash),
+                    user_id,
+                );
+                // TODO add to audit log
+            }
+        }
+
+        // Get all latest file revisions with this hash, which we then delete
+        // so it's no longer the most recent revision (which we can't hide).
+
+        let query = Statement::from_sql_and_values(
+            DatabaseBackend::Postgres,
+            str!("
+                SELECT
+                    f.site_id AS site_id,
+                    f.page_id AS page_id,
+                    f.file_id AS file_id,
+                    r1.revision_id AS revision_id
+                FROM file AS f
+                JOIN file_revision AS r1
+                    ON f.file_id = r1.file_id
+                LEFT OUTER JOIN file_revision AS r2
+                    ON (f.file_id = r2.file_id AND r1.revision_number < r2.revision_number)
+                WHERE r2.revision_id IS NULL
+                AND r1.s3_hash = $1
+            "),
+            [Value::from(s3_hash.to_vec())],
         );
 
-        // TODO add to audit log
+        let mut stream = txn.stream(query).await?;
+        while let Some(row) = stream.try_next().await? {
+            let site_id: i64 = row.try_get_by_index(0)?;
+            let page_id: i64 = row.try_get_by_index(1)?;
+            let file_id: i64 = row.try_get_by_index(2)?;
+            let revision_id: i64 = row.try_get_by_index(3)?;
 
-        // We can't use SeaORM to do an update_many because we have to modify the 'hidden'
-        // column to hide the data. But, there's a chance that the column is already blocked,
-        // which requires manual adjustment.
-        //
-        // Instead, we use a stream to get rows and then update each one.
+            total_files_deleted += 1;
 
-        let mut revisions_affected = 0;
-        let mut file_revisions = FileRevision::find()
-            .filter(file_revision::Column::S3Hash.eq(EMPTY_BLOB_HASH.to_vec()))
+            if deleter_user_id.is_some() {
+                // Only do deletions when running for real
+                FileService::delete_with_erased_s3_hash(
+                    ctx,
+                    DeleteFile {
+                        site_id,
+                        page_id,
+                        file: file_id.into(),
+                        last_revision_id: revision_id,
+                        revision_comments: format!(
+                            "Hard delete {}",
+                            blob_hash_to_hex(&s3_hash)
+                        ),
+                        user_id: SYSTEM_USER_ID,
+                    },
+                )
+                .await?;
+            }
+        }
+
+        // Go through all the revisions with the matching S3 hash and delete / hide it
+
+        let mut stream = FileRevision::find()
+            .filter(file_revision::Column::S3Hash.eq(s3_hash.as_slice()))
             .stream(txn)
             .await?;
 
-        while let Some(file_revision) = file_revisions.try_next().await? {
-            debug!("Updating file revision {}", file_revision.revision_id);
+        while let Some(rev) = stream.try_next().await? {
+            revisions.add(rev.revision_id);
+            files.add(rev.file_id);
+            pages.add(rev.page_id);
+            sites.add(rev.site_id);
 
-            // Reuse the buffer from the model
-            let s3_hash = {
-                let mut buffer = file_revision.s3_hash;
-                buffer.copy_from_slice(&EMPTY_BLOB_HASH);
-                buffer
-            };
+            if deleter_user_id.is_some() {
+                // Amend 'hidden' to add 's3_hash'
+                let hidden = {
+                    let column = str!("s3_hash"); // avoid double-allocating String
+                    let mut hidden = rev.hidden;
+                    if !hidden.contains(&column) {
+                        hidden.push(column);
+                        hidden.sort();
+                    }
+                    hidden
+                };
 
-            // Add 's3_hash' to hidden (deleting the blob data)
-            // Then make sure to maintain normal invariants
-            let hidden = {
-                let mut hidden = file_revision.hidden;
-                let field = str!("s3_hash");
-                if !hidden.contains(&field) {
-                    hidden.push(field);
-                }
-                hidden.sort();
-                hidden
-            };
+                // Run UPDATE
+                let model = file_revision::ActiveModel {
+                    revision_id: Set(rev.revision_id),
+                    s3_hash: Set(EMPTY_BLOB_HASH.to_vec()),
+                    hidden: Set(hidden),
+                    ..Default::default()
+                };
 
-            let model = file_revision::ActiveModel {
-                revision_id: Set(file_revision.revision_id),
-                s3_hash: Set(s3_hash),
-                hidden: Set(hidden),
-                ..Default::default()
-            };
-            model.update(txn).await?;
-            revisions_affected += 1;
+                model.update(txn).await?;
+            }
         }
 
-        // Delete and blacklist the hash, nobody should be uploading new versions
-        try_join!(
-            BlobService::add_blacklist(ctx, s3_hash, user_id),
-            BlobService::hard_delete(ctx, &s3_hash),
-        )?;
+        // Update all users using this blob to remove this as a profile picture
+        // (But first getting a set of sample records)
 
-        Ok(HardDeleteOutput { revisions_affected })
+        let sample_user_ids: Vec<i64> = User::find()
+            .select_only()
+            .column(user::Column::UserId)
+            .filter(user::Column::AvatarS3Hash.eq(s3_hash.as_slice()))
+            .limit(u64::from(SAMPLE_COUNT))
+            .into_tuple()
+            .all(txn)
+            .await?;
+
+        let total_users = match deleter_user_id {
+            Some(_) => {
+                // Mutate, update all users and get count
+                let model = user::ActiveModel {
+                    avatar_s3_hash: Set(None),
+                    ..Default::default()
+                };
+
+                User::update_many()
+                    .set(model)
+                    .filter(user::Column::AvatarS3Hash.eq(s3_hash.as_slice()))
+                    .exec(txn)
+                    .await?
+                    .rows_affected
+            }
+            None => {
+                // Read-only, just get the count
+                User::find()
+                    .select_only()
+                    .column_as(user::Column::UserId.count(), "count")
+                    .filter(user::Column::AvatarS3Hash.eq(s3_hash.as_slice()))
+                    .into_tuple()
+                    .one(txn)
+                    .await?
+                    .expect("No results from COUNT aggregate query")
+            }
+        };
+
+        if let Some(user_id) = deleter_user_id {
+            // Delete and blacklist the hash, nobody should be uploading new versions
+            // Only do so if we are actually mutating.
+            try_join!(
+                BlobService::add_blacklist(ctx, s3_hash, user_id),
+                BlobService::hard_delete(ctx, &s3_hash),
+            )?;
+        }
+
+        // Finish counting and sampling
+        let (total_revisions, sample_revision_ids) = revisions.finish();
+        let (total_files, sample_file_ids) = files.finish();
+        let (total_pages, sample_page_ids) = pages.finish();
+        let (total_sites, sample_site_ids) = sites.finish();
+
+        Ok(HardDeleteOutput {
+            total_revisions,
+            total_files,
+            total_files_deleted,
+            total_pages,
+            total_sites,
+            total_users,
+            sample_revision_ids,
+            sample_file_ids,
+            sample_page_ids,
+            sample_site_ids,
+            sample_user_ids,
+        })
     }
 
     // Blacklist operations
@@ -824,8 +859,48 @@ fn s3_error<T>(response: &ResponseData, action: &str) -> Result<T> {
 }
 
 #[derive(Debug)]
+enum HardDeleteInner {
+    Commit { s3_hash: BlobHash, user_id: i64 },
+    DryRun { s3_hash: BlobHash },
+}
+
+#[derive(Debug)]
 struct PendingBlob {
     s3_path: String,
     expected_length: i64,
     moved_hash: Option<Vec<u8>>,
+}
+
+/// Helper struct to produce a count of items and a sample list.
+#[derive(Debug)]
+struct SamplerCounter<T: Hash + Ord + Eq> {
+    items: HashSet<T>,
+}
+
+impl<T: Hash + Ord + Eq> SamplerCounter<T> {
+    #[inline]
+    fn new() -> Self {
+        SamplerCounter {
+            items: HashSet::new(),
+        }
+    }
+
+    fn add(&mut self, item: T) {
+        self.items.insert(item);
+    }
+
+    fn finish(self) -> (usize, Vec<T>) {
+        let count = self.items.len();
+        let samples = {
+            let mut samples = self
+                .items
+                .into_iter()
+                .take(usize::from(SAMPLE_COUNT))
+                .collect::<Vec<_>>();
+            samples.sort();
+            samples
+        };
+
+        (count, samples)
+    }
 }

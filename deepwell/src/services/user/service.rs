@@ -426,7 +426,7 @@ impl UserService {
                 None => None,
                 Some(uploaded_blob_id) => {
                     let config = ctx.config();
-                    let FinalizeBlobUploadOutput { hash, size, .. } =
+                    let FinalizeBlobUploadOutput { s3_hash, size, .. } =
                         BlobService::finish_upload(ctx, user.user_id, &uploaded_blob_id)
                             .await?;
 
@@ -438,7 +438,7 @@ impl UserService {
                         return Err(Error::BlobTooBig);
                     }
 
-                    Some(hash.to_vec())
+                    Some(s3_hash.to_vec())
                 }
             };
 
