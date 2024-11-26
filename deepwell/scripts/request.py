@@ -40,15 +40,19 @@ def print_data(data):
 
 
 def deepwell_request(endpoint, method, data, id=0, color=False):
-    r = requests.post(
-        endpoint,
-        json={
-            "jsonrpc": "2.0",
-            "method": method,
-            "params": data,
-            "id": id,
-        },
-    )
+    try:
+        r = requests.post(
+            endpoint,
+            json={
+                "jsonrpc": "2.0",
+                "method": method,
+                "params": data,
+                "id": id,
+            },
+        )
+    except Exception as exc:
+        print(f"Error: {exc}")
+        return 1
 
     if color:
         green_start = "\x1b[32m"
