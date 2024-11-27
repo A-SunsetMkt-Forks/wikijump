@@ -1,0 +1,59 @@
+{
+    "www": {
+        "start": [
+            {
+                "name": "default_avatar.png",
+                "path": "default_avatar.png"
+            },
+            {
+                "name": "lock.svg",
+                "path": "lock.svg"
+            },
+            {
+                "name": "null",
+                "path": "empty"
+            }
+        ]
+    },
+    "test": {
+        "system:join": [
+            {
+                "name": "restricted.svg",
+                "path": "lock.svg"
+            },
+            {
+                "name": "restricted2.svg",
+                "path": "lock.svg",
+                "overwrite": "empty"
+            },
+            {
+                "name": "restricted3.svg",
+                "path": "lock.svg",
+                "deleted": true
+            }
+        ],
+        "system:page-tags": [
+            {
+                "name": "seed_pages.JSON",
+                "path": "pages.json"
+            },
+            {
+                "name": "seed_users.JSON",
+                "path": "users.json"
+            },
+            {
+                "name": "seed_sites.JSON",
+                "path": "sites.json"
+            }
+        ]
+    },
+    "scp-wiki": {
+        "scp-002": [
+            {
+                "name": "SCP.txt",
+                "path": "scp-main.ftml",
+                "overwrite": "scp-002.ftml"
+            }
+        ]
+    }
+}
