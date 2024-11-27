@@ -227,7 +227,7 @@ pub async fn seed(state: &ServerState) -> Result<()> {
 
     // Seed files
     {
-        let mut path_buffer = PathBuf::from("assets");
+        let mut path_buffer = state.config.seeder_path.clone();
         let client = reqwest::Client::new();
 
         async fn upload_file(
