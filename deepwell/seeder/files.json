@@ -30,6 +30,12 @@
                 "name": "restricted3.svg",
                 "path": "lock.svg",
                 "deleted": true
+            },
+            {
+                "name": "restricted4.svg",
+                "path": "lock.svg",
+                "overwrite": "empty",
+                "deleted": true
             }
         ],
         "system:page-tags": [
