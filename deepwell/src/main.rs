@@ -118,7 +118,8 @@ async fn main() -> Result<()> {
     // Build and run server
     info!("Building server...");
     let server = api::build_server(app_state).await?;
+
     info!("Listening to connections...");
-    server.stopped().await;
+    server.stopped().await; // block until end
     Ok(())
 }
