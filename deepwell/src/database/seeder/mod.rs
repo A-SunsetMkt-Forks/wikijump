@@ -25,7 +25,9 @@ use crate::api::ServerState;
 use crate::constants::{ADMIN_USER_ID, SYSTEM_USER_ID};
 use crate::models::sea_orm_active_enums::AliasType;
 use crate::services::alias::{AliasService, CreateAlias};
+use crate::services::blob::{BlobService, StartBlobUpload, StartBlobUploadOutput};
 use crate::services::domain::{CreateCustomDomain, DomainService};
+use crate::services::file::{CreateFile, FileService};
 use crate::services::filter::{CreateFilter, FilterService};
 use crate::services::page::{CreatePage, PageService};
 use crate::services::site::{CreateSite, CreateSiteOutput, SiteService};
@@ -36,8 +38,12 @@ use anyhow::Result;
 use sea_orm::{
     ConnectionTrait, DatabaseBackend, DatabaseTransaction, Statement, TransactionTrait,
 };
+use serde_json::Value as JsonValue;
 use std::borrow::Cow;
 use std::collections::HashMap;
+use std::fs;
+use std::io::Read;
+use std::path::{Path, PathBuf};
 
 pub async fn seed(state: &ServerState) -> Result<()> {
     info!("Running seeder...");
@@ -67,6 +73,7 @@ pub async fn seed(state: &ServerState) -> Result<()> {
         users,
         sites,
         pages,
+        files,
         filters,
     } = SeedData::load(&state.config.seeder_path)?;
 
@@ -185,6 +192,7 @@ pub async fn seed(state: &ServerState) -> Result<()> {
     }
 
     // Seed page data
+    let mut page_ids = HashMap::new();
     for (site_slug, pages) in pages {
         info!("Creating pages in site {site_slug}");
         let site_id = site_ids[&site_slug];
@@ -210,6 +218,96 @@ pub async fn seed(state: &ServerState) -> Result<()> {
 
             // TODO add attribution with site_user as author
             let _ = model;
+
+            page_ids.insert((site_id, model.slug), model.page_id);
+        }
+    }
+
+    // Seed files
+    {
+        let mut path = PathBuf::from("assets");
+        let client = reqwest::Client::new();
+
+        for (site_slug, files) in files {
+            info!("Creating files within site {site_slug}");
+            let site_id = site_ids[&site_slug];
+
+            for (page_slug, files) in files {
+                info!("Creating files within page {page_slug}");
+                let page_id = page_ids[&(site_id, page_slug)];
+
+                for file in files {
+                    info!(
+                        "Creating file '{}' (from {})",
+                        file.name,
+                        file.path.display()
+                    );
+
+                    // Make sure that paths are only in the local seeder/ directory,
+                    // to avoid pulling random files from the filesystem.
+                    assert_eq!(
+                        file.path.parent(),
+                        Some(Path::new("")),
+                        "File paths must not contain any directory component",
+                    );
+
+                    // Then update the path and retrieve the file body.
+                    //
+                    // Also check the file type for safety. We're not allowing symlinks for
+                    // the same reason we're not allowing non-local paths.
+                    let (bytes, blob_size) = {
+                        path.push(&file.path);
+
+                        let stat = fs::metadata(&path)?;
+                        assert!(
+                            stat.file_type().is_file(),
+                            "Only regular files are allowed as file input"
+                        );
+
+                        let mut bytes = Vec::new();
+                        let mut f = fs::File::open(&path)?;
+                        f.read_to_end(&mut bytes)?;
+
+                        (bytes, stat.len())
+                    };
+
+                    // Start the upload process
+                    let StartBlobUploadOutput {
+                        pending_blob_id,
+                        presign_url,
+                        expires_at: _,
+                    } = BlobService::start_upload(
+                        &ctx,
+                        StartBlobUpload {
+                            user_id: SYSTEM_USER_ID,
+                            blob_size,
+                        },
+                    )
+                    .await?;
+
+                    // Upload to S3
+                    client.post(presign_url).body(bytes).send().await?;
+
+                    // Create the file entry
+                    FileService::create(
+                        &ctx,
+                        CreateFile {
+                            site_id,
+                            page_id,
+                            name: file.name,
+                            uploaded_blob_id: pending_blob_id,
+                            revision_comments: str!(""),
+                            user_id: SYSTEM_USER_ID,
+                            licensing: JsonValue::Null,
+                            bypass_filter: true,
+                        },
+                    )
+                    .await?;
+
+                    // Clean up
+                    path.pop();
+                }
+            }
         }
     }
 

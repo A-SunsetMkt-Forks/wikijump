@@ -23,7 +23,7 @@ use anyhow::Result;
 use ftml::layout::Layout;
 use serde::Deserialize;
 use std::collections::HashMap;
-use std::fs::{self, File};
+use std::fs;
 use std::path::{Path, PathBuf};
 use time::Date;
 
@@ -32,6 +32,7 @@ pub struct SeedData {
     pub users: Vec<User>,
     pub sites: Vec<Site>,
     pub pages: HashMap<String, Vec<Page>>,
+    pub files: HashMap<String, HashMap<String, Vec<File>>>,
     pub filters: Vec<Filter>,
 }
 
@@ -63,6 +64,10 @@ impl SeedData {
             }
         }
 
+        // Load file data
+        let files: HashMap<String, HashMap<String, Vec<File>>> =
+            Self::load_json(&mut path, "files")?;
+
         // Load filter data
         let filters: Vec<Filter> = Self::load_json(&mut path, "filters")?;
 
@@ -71,6 +76,7 @@ impl SeedData {
             users,
             sites,
             pages: site_pages,
+            files,
             filters,
         })
     }
@@ -83,7 +89,7 @@ impl SeedData {
         path.set_extension("json");
         debug!("Loading JSON from {}", path.display());
 
-        let mut file = File::open(path)?;
+        let mut file = fs::File::open(path)?;
         let data = serde_json::from_reader(&mut file)?;
         Ok(data)
     }
@@ -179,4 +185,17 @@ pub struct Filter {
 
     #[serde(default)]
     pub forum: bool,
+}
+
+#[derive(Deserialize, Debug)]
+#[serde(rename_all = "kebab-case")]
+pub struct File {
+    pub name: String,
+    pub path: PathBuf,
+
+    #[serde(default)]
+    pub overwrite: Option<PathBuf>,
+
+    #[serde(default)]
+    pub deleted: bool,
 }
