@@ -228,11 +228,9 @@ pub async fn seed(state: &ServerState) -> Result<()> {
     // Seed files
     {
         let mut path_buffer = state.config.seeder_path.clone();
-        let client = reqwest::Client::new();
 
         async fn upload_file(
             ctx: &ServiceContext<'_>,
-            client: &reqwest::Client,
             buffer: &mut PathBuf,
             file_path: &Path,
         ) -> Result<String> {
@@ -264,8 +262,8 @@ pub async fn seed(state: &ServerState) -> Result<()> {
             // Start the upload process
             let StartBlobUploadOutput {
                 pending_blob_id,
-                presign_url,
-                expires_at: _,
+                s3_path,
+                ..
             } = BlobService::start_upload(
                 ctx,
                 StartBlobUpload {
@@ -276,7 +274,12 @@ pub async fn seed(state: &ServerState) -> Result<()> {
             .await?;
 
             // Upload to S3
-            client.post(presign_url).body(bytes).send().await?;
+            let response = ctx.s3_bucket().put_object(s3_path, &bytes).await?;
+            assert_eq!(
+                response.status_code(),
+                200,
+                "Upload to S3 presign location failed",
+            );
 
             // Clean up
             buffer.pop();
@@ -300,7 +303,7 @@ pub async fn seed(state: &ServerState) -> Result<()> {
                     );
 
                     let uploaded_blob_id =
-                        upload_file(&ctx, &client, &mut path_buffer, &file.path).await?;
+                        upload_file(&ctx, &mut path_buffer, &file.path).await?;
 
                     // Create the file entry
                     let CreateFileOutput {
@@ -328,7 +331,7 @@ pub async fn seed(state: &ServerState) -> Result<()> {
                     // We can use our helper function to handle the file upload.
                     if let Some(path) = file.overwrite {
                         let uploaded_blob_id =
-                            upload_file(&ctx, &client, &mut path_buffer, &path).await?;
+                            upload_file(&ctx, &mut path_buffer, &path).await?;
 
                         let output = FileService::edit(
                             &ctx,
