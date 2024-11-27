@@ -27,7 +27,9 @@ use crate::models::sea_orm_active_enums::AliasType;
 use crate::services::alias::{AliasService, CreateAlias};
 use crate::services::blob::{BlobService, StartBlobUpload, StartBlobUploadOutput};
 use crate::services::domain::{CreateCustomDomain, DomainService};
-use crate::services::file::{CreateFile, FileService};
+use crate::services::file::{
+    CreateFile, CreateFileOutput, DeleteFile, EditFile, EditFileBody, FileService,
+};
 use crate::services::filter::{CreateFilter, FilterService};
 use crate::services::page::{CreatePage, PageService};
 use crate::services::site::{CreateSite, CreateSiteOutput, SiteService};
@@ -225,8 +227,63 @@ pub async fn seed(state: &ServerState) -> Result<()> {
 
     // Seed files
     {
-        let mut path = PathBuf::from("assets");
+        let mut path_buffer = PathBuf::from("assets");
         let client = reqwest::Client::new();
+
+        async fn upload_file(
+            ctx: &ServiceContext<'_>,
+            client: &reqwest::Client,
+            buffer: &mut PathBuf,
+            file_path: &Path,
+        ) -> Result<String> {
+            // Make sure that paths are only in the local seeder/ directory,
+            // to avoid pulling random files from the filesystem.
+            assert_eq!(
+                file_path.parent(),
+                Some(Path::new("")),
+                "File paths must not contain any directory component",
+            );
+
+            // Then update the path and retrieve the file body.
+            //
+            // Also check the file type for safety. We're not allowing symlinks for
+            // the same reason we're not allowing non-local paths.
+            buffer.push(&file_path);
+
+            let file_path = &buffer;
+            let stat = fs::metadata(file_path)?;
+            assert!(
+                stat.file_type().is_file(),
+                "Only regular files are allowed as file input",
+            );
+
+            let mut bytes = Vec::new();
+            let mut file = fs::File::open(file_path)?;
+            file.read_to_end(&mut bytes)?;
+
+            // Start the upload process
+            let StartBlobUploadOutput {
+                pending_blob_id,
+                presign_url,
+                expires_at: _,
+            } = BlobService::start_upload(
+                ctx,
+                StartBlobUpload {
+                    user_id: SYSTEM_USER_ID,
+                    blob_size: stat.len(),
+                },
+            )
+            .await?;
+
+            // Upload to S3
+            client.post(presign_url).body(bytes).send().await?;
+
+            // Clean up
+            buffer.pop();
+
+            // Return value
+            Ok(pending_blob_id)
+        }
 
         for (site_slug, files) in files {
             info!("Creating files within site {site_slug}");
@@ -243,59 +300,21 @@ pub async fn seed(state: &ServerState) -> Result<()> {
                         file.path.display()
                     );
 
-                    // Make sure that paths are only in the local seeder/ directory,
-                    // to avoid pulling random files from the filesystem.
-                    assert_eq!(
-                        file.path.parent(),
-                        Some(Path::new("")),
-                        "File paths must not contain any directory component",
-                    );
-
-                    // Then update the path and retrieve the file body.
-                    //
-                    // Also check the file type for safety. We're not allowing symlinks for
-                    // the same reason we're not allowing non-local paths.
-                    let (bytes, blob_size) = {
-                        path.push(&file.path);
-
-                        let stat = fs::metadata(&path)?;
-                        assert!(
-                            stat.file_type().is_file(),
-                            "Only regular files are allowed as file input"
-                        );
-
-                        let mut bytes = Vec::new();
-                        let mut f = fs::File::open(&path)?;
-                        f.read_to_end(&mut bytes)?;
-
-                        (bytes, stat.len())
-                    };
-
-                    // Start the upload process
-                    let StartBlobUploadOutput {
-                        pending_blob_id,
-                        presign_url,
-                        expires_at: _,
-                    } = BlobService::start_upload(
-                        &ctx,
-                        StartBlobUpload {
-                            user_id: SYSTEM_USER_ID,
-                            blob_size,
-                        },
-                    )
-                    .await?;
-
-                    // Upload to S3
-                    client.post(presign_url).body(bytes).send().await?;
+                    let uploaded_blob_id =
+                        upload_file(&ctx, &client, &mut path_buffer, &file.path).await?;
 
                     // Create the file entry
-                    FileService::create(
+                    let CreateFileOutput {
+                        file_id,
+                        file_revision_id,
+                        ..
+                    } = FileService::create(
                         &ctx,
                         CreateFile {
                             site_id,
                             page_id,
                             name: file.name,
-                            uploaded_blob_id: pending_blob_id,
+                            uploaded_blob_id,
                             revision_comments: str!(""),
                             user_id: SYSTEM_USER_ID,
                             licensing: JsonValue::Null,
@@ -304,8 +323,53 @@ pub async fn seed(state: &ServerState) -> Result<()> {
                     )
                     .await?;
 
-                    // Clean up
-                    path.pop();
+                    let mut last_revision_id = file_revision_id;
+
+                    // If we are uploading an extra revision, do so now.
+                    // We can use our helper function to handle the file upload.
+                    if let Some(path) = file.overwrite {
+                        let uploaded_blob_id =
+                            upload_file(&ctx, &client, &mut path_buffer, &path).await?;
+
+                        let output = FileService::edit(
+                            &ctx,
+                            EditFile {
+                                site_id,
+                                page_id,
+                                file_id,
+                                user_id: SYSTEM_USER_ID,
+                                last_revision_id,
+                                revision_comments: str!(""),
+                                bypass_filter: true,
+                                body: EditFileBody {
+                                    name: Maybe::Unset,
+                                    licensing: Maybe::Unset,
+                                    uploaded_blob_id: Maybe::Set(uploaded_blob_id),
+                                },
+                            },
+                        )
+                        .await?;
+
+                        if let Some(output) = output {
+                            last_revision_id = output.file_revision_id;
+                        }
+                    }
+
+                    // If we are deleting the file, do so now.
+                    if file.deleted {
+                        FileService::delete(
+                            &ctx,
+                            DeleteFile {
+                                site_id,
+                                page_id,
+                                file: Reference::Id(file_id),
+                                user_id: SYSTEM_USER_ID,
+                                last_revision_id,
+                                revision_comments: str!(""),
+                            },
+                        )
+                        .await?;
+                    }
                 }
             }
         }
