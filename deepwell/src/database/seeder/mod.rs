@@ -286,11 +286,10 @@ pub async fn seed(state: &ServerState) -> Result<()> {
         }
 
         for (site_slug, files) in files {
-            info!("Creating files within site {site_slug}");
             let site_id = site_ids[&site_slug];
 
             for (page_slug, files) in files {
-                info!("Creating files within page {page_slug}");
+                info!("Creating files within site {site_slug} page {page_slug}");
                 let page_id = page_ids[&(site_id, page_slug)];
 
                 for file in files {
