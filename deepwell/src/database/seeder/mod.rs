@@ -229,10 +229,7 @@ pub async fn seed(state: &ServerState) -> Result<()> {
         // Reused buffer for prepending the seeder path
         let mut path_buffer = state.config.seeder_path.clone();
 
-        async fn load_file(
-            buffer: &mut PathBuf,
-            file_path: &Path,
-        ) -> Result<Vec<u8>> {
+        async fn load_file(buffer: &mut PathBuf, file_path: &Path) -> Result<Vec<u8>> {
             // Make sure that paths are only in the local seeder/ directory,
             // to avoid pulling random files from the filesystem.
             assert_eq!(
