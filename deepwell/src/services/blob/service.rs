@@ -522,69 +522,78 @@ impl BlobService {
             [Value::from(s3_hash.to_vec())],
         );
 
-        let mut stream = txn.stream(query).await?;
-        while let Some(row) = stream.try_next().await? {
-            let site_id: i64 = row.try_get_by_index(0)?;
-            let page_id: i64 = row.try_get_by_index(1)?;
-            let file_id: i64 = row.try_get_by_index(2)?;
-            let revision_id: i64 = row.try_get_by_index(3)?;
+        // NOTE: Here and in every other usage of streams, we put it in a separate scope
+        //       so that the stream object is dropped at the end.
+        //
+        //       This is because streams hold a lock on the connection pool, so when we
+        //       are done with the results we need to dispose of the stream object to
+        //       unblock the database for further queries.
+        {
+            let mut stream = txn.stream(query).await?;
+            while let Some(row) = stream.try_next().await? {
+                let site_id: i64 = row.try_get_by_index(0)?;
+                let page_id: i64 = row.try_get_by_index(1)?;
+                let file_id: i64 = row.try_get_by_index(2)?;
+                let revision_id: i64 = row.try_get_by_index(3)?;
 
-            total_files_deleted += 1;
+                total_files_deleted += 1;
 
-            if deleter_user_id.is_some() {
-                // Only do deletions when running for real
-                FileService::delete_with_erased_s3_hash(
-                    ctx,
-                    DeleteFile {
-                        site_id,
-                        page_id,
-                        file: file_id.into(),
-                        last_revision_id: revision_id,
-                        revision_comments: format!(
-                            "Hard delete {}",
-                            blob_hash_to_hex(&s3_hash)
-                        ),
-                        user_id: SYSTEM_USER_ID,
-                    },
-                )
-                .await?;
+                if deleter_user_id.is_some() {
+                    // Only do deletions when running for real
+                    FileService::delete_with_erased_s3_hash(
+                        ctx,
+                        DeleteFile {
+                            site_id,
+                            page_id,
+                            file: file_id.into(),
+                            last_revision_id: revision_id,
+                            revision_comments: format!(
+                                "Hard delete {}",
+                                blob_hash_to_hex(&s3_hash)
+                            ),
+                            user_id: SYSTEM_USER_ID,
+                        },
+                    )
+                    .await?;
+                }
             }
         }
 
         // Go through all the revisions with the matching S3 hash and delete / hide it
+        {
+            let mut stream = FileRevision::find()
+                .filter(file_revision::Column::S3Hash.eq(s3_hash.as_slice()))
+                .stream(txn)
+                .await?;
 
-        let mut stream = FileRevision::find()
-            .filter(file_revision::Column::S3Hash.eq(s3_hash.as_slice()))
-            .stream(txn)
-            .await?;
+            while let Some(rev) = stream.try_next().await? {
+                revisions.add(rev.revision_id);
+                files.add(rev.file_id);
+                pages.add(rev.page_id);
+                sites.add(rev.site_id);
 
-        while let Some(rev) = stream.try_next().await? {
-            revisions.add(rev.revision_id);
-            files.add(rev.file_id);
-            pages.add(rev.page_id);
-            sites.add(rev.site_id);
+                if deleter_user_id.is_some() {
+                    // Amend 'hidden' to add 's3_hash'
+                    let hidden = {
+                        let column = str!("s3_hash"); // avoid double-allocating String
+                        let mut hidden = rev.hidden;
+                        if !hidden.contains(&column) {
+                            hidden.push(column);
+                            hidden.sort();
+                        }
+                        hidden
+                    };
 
-            if deleter_user_id.is_some() {
-                // Amend 'hidden' to add 's3_hash'
-                let hidden = {
-                    let column = str!("s3_hash"); // avoid double-allocating String
-                    let mut hidden = rev.hidden;
-                    if !hidden.contains(&column) {
-                        hidden.push(column);
-                        hidden.sort();
-                    }
-                    hidden
-                };
+                    // Run UPDATE
+                    let model = file_revision::ActiveModel {
+                        revision_id: Set(rev.revision_id),
+                        s3_hash: Set(EMPTY_BLOB_HASH.to_vec()),
+                        hidden: Set(hidden),
+                        ..Default::default()
+                    };
 
-                // Run UPDATE
-                let model = file_revision::ActiveModel {
-                    revision_id: Set(rev.revision_id),
-                    s3_hash: Set(EMPTY_BLOB_HASH.to_vec()),
-                    hidden: Set(hidden),
-                    ..Default::default()
-                };
-
-                model.update(txn).await?;
+                    model.update(txn).await?;
+                }
             }
         }
 
