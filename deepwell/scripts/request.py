@@ -50,6 +50,9 @@ def deepwell_request(endpoint, method, data, id=0, color=False):
                 "id": id,
             },
         )
+    except KeyboardInterrupt:
+        print("Interrupted!")
+        return -1
     except Exception as exc:
         print(f"Error: {exc}")
         return 1
