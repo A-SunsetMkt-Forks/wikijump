@@ -211,7 +211,7 @@ pub async fn seed(state: &ServerState) -> Result<()> {
                     alt_title: page.alt_title,
                     slug: page.slug,
                     layout: None,
-                    revision_comments: str!(""),
+                    revision_comments: str!(),
                     user_id: SYSTEM_USER_ID,
                     bypass_filter: true,
                 },
@@ -325,7 +325,7 @@ pub async fn seed(state: &ServerState) -> Result<()> {
                                 file_id,
                                 user_id: SYSTEM_USER_ID,
                                 last_revision_id,
-                                revision_comments: str!(""),
+                                revision_comments: str!(),
                                 bypass_filter: true,
                                 body: EditFileBody {
                                     name: Maybe::Unset,
@@ -351,7 +351,7 @@ pub async fn seed(state: &ServerState) -> Result<()> {
                                 file: Reference::Id(file_id),
                                 user_id: SYSTEM_USER_ID,
                                 last_revision_id,
-                                revision_comments: str!(""),
+                                revision_comments: str!(),
                             },
                         )
                         .await?;
