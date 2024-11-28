@@ -301,19 +301,48 @@ impl BlobService {
 
         debug!("Updating blob metadata in database and S3");
 
-        // Convert size to correct integer type
-        let size: i64 = data.len().try_into().expect("Buffer size exceeds i64");
+        // If the blob exists, then just delete the uploaded one.
+        //
+        // If it doesn't, then we need to move it. However, within S3
+        // we cannot "move" objects, we have to upload and delete the original.
+        //
+        // In either case, we delete the blob at the temporary upload location.
 
+        let result = Self::direct_upload(ctx, data).await?;
+        bucket.delete_object(&s3_path).await?;
+
+        // Update pending blob with hash
+        let model = blob_pending::ActiveModel {
+            external_id: Set(str!(pending_blob_id)),
+            s3_hash: Set(Some(result.s3_hash.to_vec())),
+            ..Default::default()
+        };
+        model.update(txn).await?;
+
+        // Return
+        Ok(result)
+    }
+
+    /// Takes a blob and uploads it to its final destination in S3.
+    ///
+    /// This is used in the above `move_uploaded_inner()` method to
+    /// "move" the S3 blob. This is done by uploading to the final
+    /// destination, then afterwards, deleting the blob at the temporary
+    /// upload location.
+    pub(crate) async fn direct_upload(
+        ctx: &ServiceContext<'_>,
+        data: Vec<u8>,
+    ) -> Result<FinalizeBlobUploadOutput> {
+        let bucket = ctx.s3_bucket();
+
+        // Get hash for blob
         let s3_hash = sha512_hash(&data);
         let hex_hash = blob_hash_to_hex(&s3_hash);
 
-        // If the blob exists, then just delete the uploaded one.
-        //
-        // If it doesn't, then we need to move it. However, within
-        // S3 we cannot "move" objects, we have to upload and delete the original.
+        // Convert size to correct integer type
+        let size: i64 = data.len().try_into().expect("Buffer size exceeds i64");
 
-        let result = match Self::head(ctx, &hex_hash).await? {
-            // Blob exists, copy metadata and return that
+        match Self::head(ctx, &hex_hash).await? {
             Some(result) => {
                 debug!("Blob with hash {hex_hash} already exists");
 
@@ -330,15 +359,13 @@ impl BlobService {
                     created: false,
                 })
             }
-
-            // Blob doesn't exist, "move" it
             None => {
                 debug!("Blob with hash {hex_hash} to be created");
 
                 // Determine MIME type for the new blob
-                let mime = ctx.mime().get_mime_type(data.to_vec()).await?;
+                let mime = ctx.mime().get_mime_type(data.clone()).await?;
 
-                // Upload S3 object to final destination
+                // Upload S3 object
                 let response = bucket
                     .put_object_with_content_type(&hex_hash, &data, &mime)
                     .await?;
@@ -354,19 +381,7 @@ impl BlobService {
                     _ => s3_error(&response, "creating final S3 blob")?,
                 }
             }
-        };
-        bucket.delete_object(&s3_path).await?;
-
-        // Update pending blob with hash
-        let model = blob_pending::ActiveModel {
-            external_id: Set(str!(pending_blob_id)),
-            s3_hash: Set(Some(s3_hash.to_vec())),
-            ..Default::default()
-        };
-        model.update(txn).await?;
-
-        // Return
-        result
+        }
     }
 
     pub async fn finish_upload(
