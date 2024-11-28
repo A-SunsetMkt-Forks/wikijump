@@ -630,10 +630,12 @@ impl BlobService {
                     .select_only()
                     .column_as(user::Column::UserId.count(), "count")
                     .filter(user::Column::AvatarS3Hash.eq(s3_hash.as_slice()))
-                    .into_tuple()
+                    .into_tuple::<i64>() // Postgres cannot return u64 as a column type
                     .one(txn)
                     .await?
                     .expect("No results from COUNT aggregate query")
+                    .try_into()
+                    .expect("Unable to convert i64 to u64")
             }
         };
 
