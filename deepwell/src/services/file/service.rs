@@ -62,6 +62,9 @@ impl FileService {
         info!("Creating file with name '{}'", name);
         let txn = ctx.transaction();
 
+        // Verify filename is valid
+        check_file_name(&name)?;
+
         // Ensure row consistency
         Self::check_conflicts(ctx, page_id, &name, "create").await?;
 
@@ -141,6 +144,7 @@ impl FileService {
         // If the name isn't changing, then we already verified this
         // when the file was originally created.
         if let Maybe::Set(ref name) = name {
+            check_file_name(name)?;
             Self::check_conflicts(ctx, page_id, name, "update").await?;
             new_name = ActiveValue::Set(name.clone());
 
@@ -233,6 +237,9 @@ impl FileService {
             "Moving file with ID {} from page ID {} to {}",
             file_id, current_page_id, destination_page_id,
         );
+
+        // Verify filename is valid
+        check_file_name(&name)?;
 
         // Ensure there isn't a file with this name on the destination page
         Self::check_conflicts(ctx, destination_page_id, &name, "move").await?;
@@ -738,6 +745,12 @@ impl FileService {
 
         Ok(())
     }
+}
+
+/// Verifies that this filename is valid.
+fn check_file_name(_name: &str) -> Result<()> {
+    // TODO https://scuttle.atlassian.net/browse/WJ-1288
+    Ok(())
 }
 
 /// Verifies that the `last_revision_id` argument is the most recent.
