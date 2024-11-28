@@ -242,7 +242,7 @@ pub async fn seed(state: &ServerState) -> Result<()> {
             //
             // Also check the file type for safety. We're not allowing symlinks for
             // the same reason we're not allowing non-local paths.
-            buffer.push(&file_path);
+            buffer.push(file_path);
 
             let file_path = &buffer;
             let stat = fs::metadata(file_path)?;
