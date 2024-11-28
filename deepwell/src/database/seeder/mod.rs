@@ -227,13 +227,14 @@ pub async fn seed(state: &ServerState) -> Result<()> {
 
     // Seed files
     {
+        // Reused buffer for prepending the seeder path
         let mut path_buffer = state.config.seeder_path.clone();
 
         async fn upload_file(
             ctx: &ServiceContext<'_>,
             buffer: &mut PathBuf,
             file_path: &Path,
-        ) -> Result<String> {
+        ) -> Result<BlobHash> {
             // Make sure that paths are only in the local seeder/ directory,
             // to avoid pulling random files from the filesystem.
             assert_eq!(
@@ -255,37 +256,21 @@ pub async fn seed(state: &ServerState) -> Result<()> {
                 "Only regular files are allowed as file input",
             );
 
-            let mut bytes = Vec::new();
+            let mut data = Vec::new();
             let mut file = fs::File::open(file_path)?;
-            file.read_to_end(&mut bytes)?;
+            file.read_to_end(&mut data)?;
 
-            // Start the upload process
-            let StartBlobUploadOutput {
-                pending_blob_id,
-                s3_path,
-                ..
-            } = BlobService::start_upload(
-                ctx,
-                StartBlobUpload {
-                    user_id: SYSTEM_USER_ID,
-                    blob_size: stat.len(),
-                },
-            )
-            .await?;
-
-            // Upload to S3
-            let response = ctx.s3_bucket().put_object(s3_path, &bytes).await?;
-            assert_eq!(
-                response.status_code(),
-                200,
-                "Upload to S3 presign location failed",
-            );
+            // Upload directly to S3.
+            //
+            // We cannot use the pending blob system during seeding
+            // since it's all in the same database transaction.
+            let result = BlobService::direct_upload(ctx, data).await?;
 
             // Clean up
             buffer.pop();
 
             // Return value
-            Ok(pending_blob_id)
+            Ok(result.s3_hash)
         }
 
         for (site_slug, files) in files {
@@ -302,8 +287,7 @@ pub async fn seed(state: &ServerState) -> Result<()> {
                         file.path.display()
                     );
 
-                    let uploaded_blob_id =
-                        upload_file(&ctx, &mut path_buffer, &file.path).await?;
+                    let s3_hash = upload_file(&ctx, &mut path_buffer, &file.path).await?;
 
                     // Create the file entry
                     let CreateFileOutput {
