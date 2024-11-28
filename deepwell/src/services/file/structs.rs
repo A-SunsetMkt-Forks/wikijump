@@ -38,6 +38,13 @@ pub struct CreateFile {
 
     #[serde(default)]
     pub bypass_filter: bool,
+
+    /// Allows internal users to upload directly.
+    /// When this is present, the value of `uploaded_blob_id` is ignored.
+    ///
+    /// Must always be `None` when called via API.
+    #[serde(default, skip)]
+    pub(crate) direct_upload: Option<Vec<u8>>,
 }
 
 pub type CreateFileOutput = CreateFirstFileRevisionOutput;
@@ -109,6 +116,14 @@ pub struct EditFileBody {
     pub name: Maybe<String>,
     pub licensing: Maybe<serde_json::Value>,
     pub uploaded_blob_id: Maybe<String>,
+
+    /// Allows internal users to upload directly.
+    /// When this is present, the value of `uploaded_blob_id` is ignored
+    /// (even though it still must be set).
+    ///
+    /// Must always be `Unset` when called via API.
+    #[serde(skip)]
+    pub(crate) direct_upload: Maybe<Vec<u8>>,
 }
 
 pub type EditFileOutput = CreateFileRevisionOutput;

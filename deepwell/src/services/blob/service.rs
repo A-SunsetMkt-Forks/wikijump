@@ -158,7 +158,6 @@ impl BlobService {
         let BlobPendingModel {
             external_id: pending_blob_id,
             presign_url,
-            s3_path,
             ..
         } = model.insert(txn).await?;
 
@@ -167,7 +166,6 @@ impl BlobService {
         Ok(StartBlobUploadOutput {
             pending_blob_id,
             presign_url,
-            s3_path,
             expires_at,
         })
     }

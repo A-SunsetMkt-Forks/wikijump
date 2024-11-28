@@ -53,6 +53,7 @@ impl FileService {
             page_id,
             name,
             uploaded_blob_id,
+            direct_upload,
             revision_comments,
             user_id,
             licensing,
@@ -79,7 +80,19 @@ impl FileService {
             mime: mime_hint,
             size: size_hint,
             created: blob_created,
-        } = BlobService::finish_upload(ctx, user_id, &uploaded_blob_id).await?;
+        } = match direct_upload {
+            None => {
+                // Normal path, finish upload of blob from user
+                BlobService::finish_upload(ctx, user_id, &uploaded_blob_id).await?
+            }
+            Some(data) => {
+                // Special path, used only internally to directly upload a blob,
+                // for instance in the seeder
+                //
+                // This should always be None when called from API users
+                BlobService::direct_upload(ctx, data).await?
+            }
+        };
 
         // Add new file
         let model = file::ActiveModel {
@@ -135,6 +148,7 @@ impl FileService {
             name,
             licensing,
             uploaded_blob_id,
+            direct_upload,
         } = body;
 
         let mut new_name = ActiveValue::NotSet;
@@ -165,7 +179,17 @@ impl FileService {
                     mime: mime_hint,
                     size: size_hint,
                     created: blob_created,
-                } = BlobService::finish_upload(ctx, user_id, id).await?;
+                } = match direct_upload {
+                    Maybe::Unset => {
+                        // Normal path, finish upload of blob from user
+                        BlobService::finish_upload(ctx, user_id, id).await?
+                    }
+                    Maybe::Set(data) => {
+                        // Special path, used only internally to directly upload a blob
+                        // See FileService::create()
+                        BlobService::direct_upload(ctx, data).await?
+                    }
+                };
 
                 Maybe::Set(FileBlob {
                     s3_hash,

@@ -25,7 +25,6 @@ use crate::api::ServerState;
 use crate::constants::{ADMIN_USER_ID, SYSTEM_USER_ID};
 use crate::models::sea_orm_active_enums::AliasType;
 use crate::services::alias::{AliasService, CreateAlias};
-use crate::services::blob::{BlobService, StartBlobUpload, StartBlobUploadOutput};
 use crate::services::domain::{CreateCustomDomain, DomainService};
 use crate::services::file::{
     CreateFile, CreateFileOutput, DeleteFile, EditFile, EditFileBody, FileService,
@@ -230,11 +229,10 @@ pub async fn seed(state: &ServerState) -> Result<()> {
         // Reused buffer for prepending the seeder path
         let mut path_buffer = state.config.seeder_path.clone();
 
-        async fn upload_file(
-            ctx: &ServiceContext<'_>,
+        async fn load_file(
             buffer: &mut PathBuf,
             file_path: &Path,
-        ) -> Result<BlobHash> {
+        ) -> Result<Vec<u8>> {
             // Make sure that paths are only in the local seeder/ directory,
             // to avoid pulling random files from the filesystem.
             assert_eq!(
@@ -260,17 +258,11 @@ pub async fn seed(state: &ServerState) -> Result<()> {
             let mut file = fs::File::open(file_path)?;
             file.read_to_end(&mut data)?;
 
-            // Upload directly to S3.
-            //
-            // We cannot use the pending blob system during seeding
-            // since it's all in the same database transaction.
-            let result = BlobService::direct_upload(ctx, data).await?;
-
             // Clean up
             buffer.pop();
 
             // Return value
-            Ok(result.s3_hash)
+            Ok(data)
         }
 
         for (site_slug, files) in files {
@@ -287,7 +279,7 @@ pub async fn seed(state: &ServerState) -> Result<()> {
                         file.path.display()
                     );
 
-                    let s3_hash = upload_file(&ctx, &mut path_buffer, &file.path).await?;
+                    let data = load_file(&mut path_buffer, &file.path).await?;
 
                     // Create the file entry
                     let CreateFileOutput {
@@ -300,8 +292,9 @@ pub async fn seed(state: &ServerState) -> Result<()> {
                             site_id,
                             page_id,
                             name: file.name,
-                            uploaded_blob_id,
-                            revision_comments: str!(""),
+                            uploaded_blob_id: str!(),
+                            direct_upload: Some(data),
+                            revision_comments: str!(),
                             user_id: SYSTEM_USER_ID,
                             licensing: JsonValue::Null,
                             bypass_filter: true,
@@ -314,9 +307,7 @@ pub async fn seed(state: &ServerState) -> Result<()> {
                     // If we are uploading an extra revision, do so now.
                     // We can use our helper function to handle the file upload.
                     if let Some(path) = file.overwrite {
-                        let uploaded_blob_id =
-                            upload_file(&ctx, &mut path_buffer, &path).await?;
-
+                        let data = load_file(&mut path_buffer, &path).await?;
                         let output = FileService::edit(
                             &ctx,
                             EditFile {
@@ -330,7 +321,8 @@ pub async fn seed(state: &ServerState) -> Result<()> {
                                 body: EditFileBody {
                                     name: Maybe::Unset,
                                     licensing: Maybe::Unset,
-                                    uploaded_blob_id: Maybe::Set(uploaded_blob_id),
+                                    uploaded_blob_id: Maybe::Set(str!()),
+                                    direct_upload: Maybe::Set(data),
                                 },
                             },
                         )
