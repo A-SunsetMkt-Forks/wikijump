@@ -503,6 +503,14 @@ impl BlobService {
         // Get all latest file revisions with this hash, which we then delete
         // so it's no longer the most recent revision (which we can't hide).
 
+        #[derive(Debug, FromQueryResult)]
+        struct LatestFileRevision {
+            site_id: i64,
+            page_id: i64,
+            file_id: i64,
+            revision_id: i64,
+        }
+
         let query = Statement::from_sql_and_values(
             DatabaseBackend::Postgres,
             str!("
@@ -522,19 +530,19 @@ impl BlobService {
             [Value::from(s3_hash.to_vec())],
         );
 
-        // NOTE: Here and in every other usage of streams, we put it in a separate scope
-        //       so that the stream object is dropped at the end.
-        //
-        //       This is because streams hold a lock on the connection pool, so when we
-        //       are done with the results we need to dispose of the stream object to
-        //       unblock the database for further queries.
         {
-            let mut stream = txn.stream(query).await?;
-            while let Some(row) = stream.try_next().await? {
-                let site_id: i64 = row.try_get_by_index(0)?;
-                let page_id: i64 = row.try_get_by_index(1)?;
-                let file_id: i64 = row.try_get_by_index(2)?;
-                let revision_id: i64 = row.try_get_by_index(3)?;
+            let latest_revisions = FileRevision::find()
+                .from_raw_sql(query)
+                .into_model::<LatestFileRevision>()
+                .all(txn)
+                .await?;
+
+            for LatestFileRevision {
+                site_id,
+                page_id,
+                file_id,
+                revision_id,
+            } in latest_revisions {
 
                 total_files_deleted += 1;
 
@@ -561,38 +569,39 @@ impl BlobService {
 
         // Go through all the revisions with the matching S3 hash and delete / hide it
         {
-            let mut stream = FileRevision::find()
+            let mut results = FileRevision::find()
                 .filter(file_revision::Column::S3Hash.eq(s3_hash.as_slice()))
-                .stream(txn)
-                .await?;
+                .paginate(txn, 20);
 
-            while let Some(rev) = stream.try_next().await? {
-                revisions.add(rev.revision_id);
-                files.add(rev.file_id);
-                pages.add(rev.page_id);
-                sites.add(rev.site_id);
+            while let Some(revs) = results.fetch_and_next().await? {
+                for rev in revs {
+                    revisions.add(rev.revision_id);
+                    files.add(rev.file_id);
+                    pages.add(rev.page_id);
+                    sites.add(rev.site_id);
 
-                if deleter_user_id.is_some() {
-                    // Amend 'hidden' to add 's3_hash'
-                    let hidden = {
-                        let column = str!("s3_hash"); // avoid double-allocating String
-                        let mut hidden = rev.hidden;
-                        if !hidden.contains(&column) {
-                            hidden.push(column);
-                            hidden.sort();
-                        }
-                        hidden
-                    };
+                    if deleter_user_id.is_some() {
+                        // Amend 'hidden' to add 's3_hash'
+                        let hidden = {
+                            let column = str!("s3_hash"); // avoid double-allocating String
+                            let mut hidden = rev.hidden;
+                            if !hidden.contains(&column) {
+                                hidden.push(column);
+                                hidden.sort();
+                            }
+                            hidden
+                        };
 
-                    // Run UPDATE
-                    let model = file_revision::ActiveModel {
-                        revision_id: Set(rev.revision_id),
-                        s3_hash: Set(EMPTY_BLOB_HASH.to_vec()),
-                        hidden: Set(hidden),
-                        ..Default::default()
-                    };
+                        // Run UPDATE
+                        let model = file_revision::ActiveModel {
+                            revision_id: Set(rev.revision_id),
+                            s3_hash: Set(EMPTY_BLOB_HASH.to_vec()),
+                            hidden: Set(hidden),
+                            ..Default::default()
+                        };
 
-                    model.update(txn).await?;
+                        model.update(txn).await?;
+                    }
                 }
             }
         }
