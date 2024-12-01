@@ -734,7 +734,7 @@ impl BlobService {
 
         if count > 0 {
             error!("Cannot blacklist a blob that is already in use (found {count} uses)");
-            Err(Error::BadRequest)
+            Err(Error::BlobCannotBlacklistExisting)
         } else {
             debug!("Found no current uses of blob to be blacklisted");
             Ok(())

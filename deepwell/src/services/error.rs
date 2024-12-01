@@ -255,6 +255,11 @@ pub enum Error {
     #[error("Uploaded blob content is blacklisted")]
     BlobBlacklisted(BlobHash),
 
+    #[error(
+        "Cannot blacklist a blob which is already in use, you must do a hard deletion"
+    )]
+    BlobCannotBlacklistExisting,
+
     #[error("Text item does not exist")]
     TextNotFound,
 
@@ -396,7 +401,8 @@ impl Error {
             Error::BlobNotUploaded => 4024,
             Error::BlobSizeMismatch => 4025,
             Error::BlobBlacklisted(_) => 4026,
-            Error::NotLatestRevisionId => 4027,
+            Error::BlobCannotBlacklistExisting => 4027,
+            Error::NotLatestRevisionId => 4028,
 
             // 4100 -- Localization
             Error::LocaleInvalid(_) => 4100,
