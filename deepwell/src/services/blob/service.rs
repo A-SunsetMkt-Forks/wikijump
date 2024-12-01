@@ -428,9 +428,9 @@ impl BlobService {
 
     // Hard-deletion operations
 
-    /// Lists information about a blob which is being considered for hard deletion.
+    /// Does a dry run on a blob hard deletion, showing what would have been changed.
     /// This method does not mutate any data.
-    pub async fn hard_delete_list(
+    pub async fn hard_delete_preview(
         ctx: &ServiceContext<'_>,
         s3_hash: BlobHash,
     ) -> Result<HardDeleteOutput> {

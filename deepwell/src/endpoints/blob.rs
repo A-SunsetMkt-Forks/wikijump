@@ -120,18 +120,18 @@ pub async fn blob_blacklist_check(
     BlobService::on_blacklist(ctx, s3_hash).await
 }
 
-pub async fn blob_hard_delete_list(
+pub async fn blob_hard_delete_preview(
     ctx: &ServiceContext<'_>,
     params: Params<'static>,
 ) -> Result<HardDeleteOutput> {
     #[derive(Deserialize, Debug)]
-    struct HardDeleteList {
+    struct HardDeletePreview {
         s3_hash: Bytes<'static>,
     }
 
-    let HardDeleteList { s3_hash } = params.parse()?;
+    let HardDeletePreview { s3_hash } = params.parse()?;
     let s3_hash = slice_to_blob_hash(s3_hash.as_ref());
-    BlobService::hard_delete_list(ctx, s3_hash).await
+    BlobService::hard_delete_preview(ctx, s3_hash).await
 }
 
 pub async fn blob_hard_delete_confirm(
