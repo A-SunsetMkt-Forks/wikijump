@@ -315,7 +315,9 @@ impl BlobService {
         // Check that new blob is not blacklisted
         if Self::on_blacklist(ctx, result.s3_hash).await? {
             let hex_hash = blob_hash_to_hex(&result.s3_hash);
-            error!("Newly-uploaded blob {pending_blob_id} is blacklisted (hash {hex_hash})");
+            error!(
+                "Newly-uploaded blob {pending_blob_id} is blacklisted (hash {hex_hash})",
+            );
 
             // Cancel this pending upload, what they're trying to store shouldn't be on here
             Self::cancel_upload(ctx, pending_blob_user_id, pending_blob_id).await?;
@@ -417,8 +419,14 @@ impl BlobService {
                     .try_into()
                     .map_err(|_| Error::BlobSizeMismatch)?;
 
-                Self::move_uploaded(ctx, pending_blob_id, user_id, &s3_path, expected_length)
-                    .await?
+                Self::move_uploaded(
+                    ctx,
+                    pending_blob_id,
+                    user_id,
+                    &s3_path,
+                    expected_length,
+                )
+                .await?
             }
 
             // Already moved
