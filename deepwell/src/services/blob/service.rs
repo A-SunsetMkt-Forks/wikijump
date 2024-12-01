@@ -543,8 +543,8 @@ impl BlobService {
                 page_id,
                 file_id,
                 revision_id,
-            } in latest_revisions {
-
+            } in latest_revisions
+            {
                 total_files_deleted += 1;
 
                 if deleter_user_id.is_some() {
