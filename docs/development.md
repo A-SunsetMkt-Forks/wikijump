@@ -61,10 +61,27 @@ $ pnpm install
 
 ## Building
 
-You can now finally build the Docker images. Navigate to `install/local` and run the following:
+You can now start up the Docker images. The basic command used to run Wikijump locally is:
 
 ```sh
-$ docker-compose -p wikijump -f docker-compose.yaml -f docker-compose.dev.yaml up
+$ [sudo] docker-compose -p wikijump -f docker-compose.yaml [-f docker-compose.dev.yaml] <action>
+```
+
+* On some systems, `sudo` is required to run Docker, but on others it is not.
+* The `-f docker-compose.dev.yaml` configuration file provides container bindings for development. In other words, if you modify `deepwell/src/` files locally, then those changes will be reflected in the container.
+
+The `install/local/deploy.py` script is meant as a convenience here. You can pass in `--sudo` or `--no-dev` to make either of the above modifications for you.
+
+The "action" corresponds to actions that `docker-compose` can do. Some common commands are:
+* `up` &mdash; Create and start containers for Wikijump.
+* `up --build` &mdash; Like the above but it first builds new images before creating containers.
+* `start` &mdash; Start any already-existing containers for Wikijump.
+* `stop` &mdash; Stop currently-running containers for Wikijump.
+
+To start the project, you want to run a command that probably looks something like:
+
+```
+$ install/local/deploy.py up
 ```
 
 _This might take some time_. Thankfully, Docker's build step is heavily cached. You will generally not need to rerun this build often.
