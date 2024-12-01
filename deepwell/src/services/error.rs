@@ -251,6 +251,9 @@ pub enum Error {
     #[error("Uploaded blob does not match expected length")]
     BlobSizeMismatch,
 
+    #[error("Uploaded blob content is blacklisted")]
+    BlobBlacklisted,
+
     #[error("Text item does not exist")]
     TextNotFound,
 
@@ -391,6 +394,7 @@ impl Error {
             Error::BlobTooBig => 4023,
             Error::BlobNotUploaded => 4024,
             Error::BlobSizeMismatch => 4025,
+            Error::BlobBlacklisted => 4026,
             Error::NotLatestRevisionId => 4027,
 
             // 4100 -- Localization
