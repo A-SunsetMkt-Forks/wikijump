@@ -25,7 +25,7 @@ services:
         read_only: true
       # Configuration data
       - type: bind
-        source: ../../../install/files/local/deepwell.toml
+        source: ../../../install/local/api/deepwell.toml
         target: /etc/deepwell.toml
       # Translation data
       - type: bind

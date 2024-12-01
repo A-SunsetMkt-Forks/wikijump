@@ -2,7 +2,7 @@ services:
   database:
     build:
       context: ../../..
-      dockerfile: install/local/dev/postgres/Dockerfile
+      dockerfile: install/local/postgres/Dockerfile
     environment:
       - "POSTGRES_DB=wikijump"
       - "POSTGRES_USER=wikijump"
@@ -51,7 +51,7 @@ services:
   api:
     build:
       context: ../../..
-      dockerfile: install/local/dev/api/Dockerfile
+      dockerfile: install/local/api/Dockerfile
     ports:
       - "2747:2747"
     links:
@@ -84,7 +84,7 @@ services:
   web:
     build:
       context: ../../..
-      dockerfile: install/local/dev/web/Dockerfile
+      dockerfile: install/local/web/Dockerfile
     ports:
       - "3000:3000"
     links:
@@ -101,7 +101,7 @@ services:
   nginx:
     build:
       context: ../../..
-      dockerfile: install/local/dev/nginx/Dockerfile
+      dockerfile: install/local/nginx/Dockerfile
     ports:
       - "80:80"
       - "443:443"
