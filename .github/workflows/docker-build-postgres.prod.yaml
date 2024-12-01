@@ -4,8 +4,8 @@ on:
   pull_request:
     paths:
       - 'web/database/**'
-      - 'install/files/postgres/**'
-      - 'install/aws/prod/docker/postgres/Dockerfile'
+      - 'install/common/postgres/**'
+      - 'install/prod/postgres/Dockerfile'
       - '.github/workflows/docker-build-postgres.prod.yaml'
 
 jobs:
@@ -16,6 +16,6 @@ jobs:
         uses: actions/checkout@v2
 
       - name: Build image
-        run: docker build -f install/aws/prod/docker/postgres/Dockerfile .
+        run: docker build -f install/prod/postgres/Dockerfile .
         env:
           DOCKER_BUILDKIT: 1

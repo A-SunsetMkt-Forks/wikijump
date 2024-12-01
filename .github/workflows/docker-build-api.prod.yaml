@@ -4,7 +4,7 @@ on:
   pull_request:
     paths:
       - 'deepwell/**'
-      - 'install/aws/prod/docker/api/Dockerfile'
+      - 'install/prod/api/Dockerfile'
       - '.github/workflows/docker-build-api.prod.yaml'
 
 jobs:
@@ -15,6 +15,6 @@ jobs:
         uses: actions/checkout@v2
 
       - name: Build image
-        run: docker build -f install/aws/prod/docker/api/Dockerfile .
+        run: docker build -f install/prod/api/Dockerfile .
         env:
           DOCKER_BUILDKIT: 1

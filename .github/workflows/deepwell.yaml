@@ -9,10 +9,9 @@ on:
       - '.github/workflows/deepwell.yaml'
       - '.github/codecov.yml'
       - 'deepwell/config.example.toml'
-      - 'install/files/local/deepwell.toml'
-      # TODO: add install/files/dev/deepwell.toml
-      #       and install/files/prod/deepwell.toml
-      #       both here and below
+      - 'install/local/api/deepwell.toml'
+      - 'install/dev/api/deepwell.toml'
+      - 'install/prod/api/deepwell.toml'
   push:
     branches:
       - develop
@@ -52,7 +51,7 @@ jobs:
         run: cd deepwell && cargo build --all-features
 
       - name: Check Configuration
-        run: cd deepwell && cargo run -- config.example.toml ../install/files/local/deepwell.toml
+        run: cd deepwell && cargo run -- config.example.toml ../install/local/api/deepwell.toml ../install/dev/api/deepwell.toml ../prod/api/deepwell.toml
         env:
           DEEPWELL_SPECIAL_ACTION: validate-config
 
