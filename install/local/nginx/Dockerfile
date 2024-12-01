@@ -21,12 +21,12 @@ RUN openssl req \
     -addext "subjectAltName=DNS:localhost,DNS:*.localhost"
 
 # Copy configuration files
-COPY ./install/files/nginx/nginx.conf /etc/nginx/nginx.conf
-COPY ./install/files/nginx/proxy.conf /etc/nginx/proxy.conf
-COPY ./install/files/nginx/gzip.conf /etc/nginx/gzip.conf
-COPY ./install/files/nginx/ffdhe2048.txt /etc/nginx/ffdhe2048.txt
-COPY ./install/files/local/ssl.conf /etc/nginx/ssl.conf
-COPY ./install/files/local/web.conf /etc/nginx/web.conf
+COPY ./install/local/nginx/nginx.conf /etc/nginx/nginx.conf
+COPY ./install/local/nginx/proxy.conf /etc/nginx/proxy.conf
+COPY ./install/local/nginx/gzip.conf /etc/nginx/gzip.conf
+COPY ./install/local/nginx/ffdhe2048.txt /etc/nginx/ffdhe2048.txt
+COPY ./install/local/nginx/ssl.conf /etc/nginx/ssl.conf
+COPY ./install/local/nginx/web.conf /etc/nginx/web.conf
 
 # Verify configuration
 RUN nginx -t

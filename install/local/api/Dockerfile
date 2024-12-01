@@ -16,9 +16,9 @@ RUN apt install -y libmagic-dev
 RUN cargo install cargo-watch sqlx-cli
 
 # Install files
-COPY install/files/local/deepwell.toml /etc/deepwell.toml
-COPY install/files/local/deepwell-start /usr/local/bin/wikijump-deepwell-start
-COPY install/files/api/health-check.sh /usr/local/bin/wikijump-health-check
+COPY ./install/local/api/deepwell.toml /etc/deepwell.toml
+COPY ./install/local/api/deepwell-start /usr/local/bin/wikijump-deepwell-start
+COPY ./install/local/api/health-check.sh /usr/local/bin/wikijump-health-check
 
 # /opt/locales is provided via docker-compose.dev.yaml
 
