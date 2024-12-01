@@ -250,7 +250,7 @@ pub enum Error {
     BlobTooBig,
 
     #[error("Uploaded blob does not match expected length")]
-    BlobSizeMismatch,
+    BlobSizeMismatch { expected: usize, actual: usize },
 
     #[error("Uploaded blob content is blacklisted")]
     BlobBlacklisted(BlobHash),
@@ -399,7 +399,7 @@ impl Error {
             Error::BlobWrongUser => 4022,
             Error::BlobTooBig => 4023,
             Error::BlobNotUploaded => 4024,
-            Error::BlobSizeMismatch => 4025,
+            Error::BlobSizeMismatch { .. } => 4025,
             Error::BlobBlacklisted(_) => 4026,
             Error::BlobCannotBlacklistExisting => 4027,
             Error::NotLatestRevisionId => 4028,
@@ -451,6 +451,10 @@ impl Error {
             } => json!({
                 "active_user_id": active_user_id,
                 "session_user_id": session_user_id,
+            }),
+            Error::BlobSizeMismatch { expected, actual } => json!({
+                "expected": expected,
+                "actual": actual,
             }),
 
             // Emit as-is

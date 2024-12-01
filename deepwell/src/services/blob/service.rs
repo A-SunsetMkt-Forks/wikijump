@@ -286,7 +286,7 @@ impl BlobService {
                 data.len(),
             );
             bucket.delete_object(&s3_path).await?;
-            return Err(Error::BlobSizeMismatch);
+            return Err(Error::BlobSizeMismatch { expected: expected_length, actual: data.len() });
         }
 
         // Special handling for empty blobs
@@ -417,7 +417,7 @@ impl BlobService {
             None => {
                 let expected_length = expected_length
                     .try_into()
-                    .map_err(|_| Error::BlobSizeMismatch)?;
+                    .map_err(|_| Error::BlobTooBig)?;
 
                 Self::move_uploaded(
                     ctx,
