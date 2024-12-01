@@ -31,8 +31,6 @@ use once_cell::sync::Lazy;
 use sea_orm::{prelude::*, FromQueryResult};
 use std::num::NonZeroI32;
 
-pub const MAXIMUM_FILE_NAME_LENGTH: usize = 256;
-
 /// The changes for the first revision.
 /// The first revision is always considered to have changed everything.
 ///
@@ -141,19 +139,7 @@ impl FileRevisionService {
         }
 
         // Validate inputs
-        if name.is_empty() {
-            error!("File name is empty");
-            return Err(Error::FileNameEmpty);
-        }
-
-        if name.len() >= MAXIMUM_FILE_NAME_LENGTH {
-            error!(
-                "File name of invalid length: {} > {}",
-                name.len(),
-                MAXIMUM_FILE_NAME_LENGTH,
-            );
-            return Err(Error::FileNameTooLong);
-        }
+        // (Note that filename checks are done in FileService)
 
         if mime_hint.is_empty() {
             error!("MIME type hint is empty");

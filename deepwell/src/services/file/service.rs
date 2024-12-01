@@ -34,7 +34,15 @@ use crate::services::file_revision::{
 use crate::services::filter::{FilterClass, FilterType};
 use crate::services::{BlobService, FileRevisionService, FilterService};
 use crate::types::FileOrder;
+use crate::utils::regex_replace_in_place;
+use once_cell::sync::Lazy;
+use regex::Regex;
 use sea_orm::ActiveValue;
+
+pub const MAXIMUM_FILE_NAME_LENGTH: usize = 256;
+
+static LEADING_TRAILING_SPACES: Lazy<Regex> =
+    Lazy::new(|| Regex::new(r"(^\s+)|(\s+$)").unwrap());
 
 #[derive(Debug)]
 pub struct FileService;
@@ -51,7 +59,7 @@ impl FileService {
         CreateFile {
             site_id,
             page_id,
-            name,
+            mut name,
             uploaded_blob_id,
             direct_upload,
             revision_comments,
@@ -64,7 +72,7 @@ impl FileService {
         let txn = ctx.transaction();
 
         // Verify filename is valid
-        check_file_name(&name)?;
+        check_file_name(&mut name)?;
 
         // Ensure row consistency
         Self::check_conflicts(ctx, page_id, &name, "create").await?;
@@ -145,7 +153,7 @@ impl FileService {
         check_last_revision(&last_revision, last_revision_id)?;
 
         let EditFileBody {
-            name,
+            mut name,
             licensing,
             uploaded_blob_id,
             direct_upload,
@@ -157,7 +165,7 @@ impl FileService {
         //
         // If the name isn't changing, then we already verified this
         // when the file was originally created.
-        if let Maybe::Set(ref name) = name {
+        if let Maybe::Set(ref mut name) = name {
             check_file_name(name)?;
             Self::check_conflicts(ctx, page_id, name, "update").await?;
             new_name = ActiveValue::Set(name.clone());
@@ -255,7 +263,7 @@ impl FileService {
         check_last_revision(&last_revision, last_revision_id)?;
 
         // Get destination filename
-        let name = name.unwrap_or_else(|| last_revision.name.clone());
+        let mut name = name.unwrap_or_else(|| last_revision.name.clone());
 
         info!(
             "Moving file with ID {} from page ID {} to {}",
@@ -263,7 +271,7 @@ impl FileService {
         );
 
         // Verify filename is valid
-        check_file_name(&name)?;
+        check_file_name(&mut name)?;
 
         // Ensure there isn't a file with this name on the destination page
         Self::check_conflicts(ctx, destination_page_id, &name, "move").await?;
@@ -772,8 +780,46 @@ impl FileService {
 }
 
 /// Verifies that this filename is valid.
-fn check_file_name(_name: &str) -> Result<()> {
-    // TODO https://scuttle.atlassian.net/browse/WJ-1288
+///
+/// This helper function is generally read-only, but if
+/// it finds a name which has leading or trailing whitespace,
+/// then it trims that off in-place.
+fn check_file_name(name: &mut String) -> Result<()> {
+    // Removes leading or trailing whitespace
+    regex_replace_in_place(name, &LEADING_TRAILING_SPACES, "");
+
+    // Disallow empty filenames
+    if name.is_empty() {
+        error!("File name is empty");
+        return Err(Error::FileNameEmpty);
+    }
+
+    // Limit filename length
+    if name.len() >= MAXIMUM_FILE_NAME_LENGTH {
+        error!(
+            "File name of invalid length: {} > {}",
+            name.len(),
+            MAXIMUM_FILE_NAME_LENGTH,
+        );
+        return Err(Error::FileNameTooLong {
+            length: name.len(),
+            maximum: MAXIMUM_FILE_NAME_LENGTH,
+        });
+    }
+
+    // Makes sure there aren't any control characters or slashes.
+    //
+    // Rust considers null bytes, newlines, tabs and the various unprintables to be 'control'.
+    // See https://doc.rust-lang.org/stable/std/primitive.char.html#method.is_control
+    if name
+        .chars()
+        .any(|c| c.is_control() || c == '/' || c == '\\')
+    {
+        error!("File name contains control characters or slashes");
+        return Err(Error::FileNameInvalidCharacters);
+    }
+
+    // Looks good
     Ok(())
 }
 
