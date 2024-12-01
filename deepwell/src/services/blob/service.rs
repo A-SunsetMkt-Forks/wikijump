@@ -526,6 +526,7 @@ impl BlobService {
                     ON (f.file_id = r2.file_id AND r1.revision_number < r2.revision_number)
                 WHERE r2.revision_id IS NULL
                 AND r1.s3_hash = $1
+                AND f.deleted_at IS NULL
             "),
             [Value::from(s3_hash.to_vec())],
         );
