@@ -35,7 +35,7 @@ pub struct Bytes<'a> {
     inner: Cow<'a, [u8]>,
 }
 
-impl<'a> Bytes<'a> {
+impl Bytes<'_> {
     #[inline]
     pub fn len(&self) -> usize {
         self.inner.as_ref().len()
@@ -105,7 +105,7 @@ impl Default for Bytes<'static> {
 
 // Serialization
 
-impl<'a> Serialize for Bytes<'a> {
+impl Serialize for Bytes<'_> {
     #[inline]
     fn serialize<S>(&self, serializer: S) -> Result<S::Ok, S::Error>
     where
