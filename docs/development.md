@@ -47,7 +47,7 @@ Node, NPM, and PNPM are well-behaved on Windows and Linux, and the difference in
 
 There are a couple of configuration files that need to be initialized prior to running your instance of Wikijump. These will be the `config.toml` and `.env` files, both located in the `deepwell` subdirectory. For a typical local deploy, both of these files can be copied from their `.example` counterparts without changing them, though it is worth looking through them briefly to understand what can be configurated for your instance.
 
-There is also a Docker configuration file that configures the various containers that host Wikijump in the local environment. You can find this file in `install/local/dev/`, named `docker-compose.yaml`, alongside `docker-compose.dev.yaml` (which provides various helpful tools for developing locally).
+There is also a Docker configuration file that configures the various containers that host Wikijump in the local environment. You can find this file in `install/local`, named `docker-compose.yaml`, alongside `docker-compose.dev.yaml` (which provides various helpful tools for developing locally).
 
 Notice that in `docker-compose.yaml`, there are configuration options for the domains to use. For development purposes, these are set to `wikijump.localhost`. This is the domain you will be connecting to, e.g. `https://www.wikijump.localhost`. The TLD `.localhost` is just like the usual `localhost` domain. Even when running locally, HTTPS is used. Because this certificate is self-signed, you will need to dismiss the certificate warning.
 
@@ -61,13 +61,13 @@ $ pnpm install
 
 ## Building
 
-You can now finally build the Docker images. Navigate to `install/local/dev` and run the following:
+You can now finally build the Docker images. Navigate to `install/local` and run the following:
 
 ```sh
 $ docker-compose -p wikijump -f docker-compose.yaml -f docker-compose.dev.yaml up
 ```
 
-_This might take some time_. Thankfully, Docker's build step is _heavily_ cached. 
+_This might take some time_. Thankfully, Docker's build step is heavily cached. You will generally not need to rerun this build often.
 
 > ### For Windows:
 >
