@@ -60,7 +60,7 @@ pub enum FileOrderColumn {
     /// Requests files in file update order.
     Update,
 
-    /// Requests pages in page deletion order.
+    /// Requests files in file deletion order.
     Deletion,
 
     /// Requests files in file name order.
