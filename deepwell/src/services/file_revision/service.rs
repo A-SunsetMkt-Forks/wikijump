@@ -270,6 +270,7 @@ impl FileRevisionService {
         let txn = ctx.transaction();
         let revision_number = next_revision_number(&previous, page_id, file_id);
 
+        let mut hidden = Vec::new();
         let FileRevisionModel {
             name,
             mut s3_hash,
@@ -282,6 +283,9 @@ impl FileRevisionService {
         if erase_s3_hash {
             // Replace S3 hash for tombstone revision with empty data
             s3_hash.copy_from_slice(&EMPTY_BLOB_HASH);
+
+            // Also block the s3_hash column for this revision
+            hidden.push(str!("s3_hash"));
         }
 
         // Run outdater
@@ -303,7 +307,7 @@ impl FileRevisionService {
             licensing: Set(licensing),
             changes: Set(vec![]),
             comments: Set(revision_comments),
-            hidden: Set(vec![]),
+            hidden: Set(hidden),
             ..Default::default()
         };
 
