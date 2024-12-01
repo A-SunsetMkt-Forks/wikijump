@@ -230,6 +230,7 @@ impl BlobService {
     async fn move_uploaded(
         ctx: &ServiceContext<'_>,
         pending_blob_id: &str,
+        pending_blob_user_id: i64,
         s3_path: &str,
         expected_length: usize,
     ) -> Result<FinalizeBlobUploadOutput> {
@@ -242,6 +243,7 @@ impl BlobService {
         let result = Self::move_uploaded_inner(
             &inner_ctx,
             pending_blob_id,
+            pending_blob_user_id,
             s3_path,
             expected_length,
         )
@@ -255,6 +257,7 @@ impl BlobService {
     async fn move_uploaded_inner(
         ctx: &ServiceContext<'_>,
         pending_blob_id: &str,
+        pending_blob_user_id: i64,
         s3_path: &str,
         expected_length: usize,
     ) -> Result<FinalizeBlobUploadOutput> {
@@ -308,6 +311,18 @@ impl BlobService {
 
         let result = Self::direct_upload(ctx, data).await?;
         bucket.delete_object(&s3_path).await?;
+
+        // Check that new blob is not blacklisted
+        if Self::on_blacklist(ctx, result.s3_hash).await? {
+            let hex_hash = blob_hash_to_hex(&result.s3_hash);
+            error!("Newly-uploaded blob {pending_blob_id} is blacklisted (hash {hex_hash})");
+
+            // Cancel this pending upload, what they're trying to store shouldn't be on here
+            Self::cancel_upload(ctx, pending_blob_user_id, pending_blob_id).await?;
+
+            // Finally, return error
+            return Err(Error::BlobBlacklisted);
+        }
 
         // Update pending blob with hash
         let model = blob_pending::ActiveModel {
@@ -402,7 +417,7 @@ impl BlobService {
                     .try_into()
                     .map_err(|_| Error::BlobSizeMismatch)?;
 
-                Self::move_uploaded(ctx, pending_blob_id, &s3_path, expected_length)
+                Self::move_uploaded(ctx, pending_blob_id, user_id, &s3_path, expected_length)
                     .await?
             }
 
