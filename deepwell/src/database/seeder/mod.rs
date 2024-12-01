@@ -26,6 +26,9 @@ use crate::constants::{ADMIN_USER_ID, SYSTEM_USER_ID};
 use crate::models::sea_orm_active_enums::AliasType;
 use crate::services::alias::{AliasService, CreateAlias};
 use crate::services::domain::{CreateCustomDomain, DomainService};
+use crate::services::file::{
+    CreateFile, CreateFileOutput, DeleteFile, EditFile, EditFileBody, FileService,
+};
 use crate::services::filter::{CreateFilter, FilterService};
 use crate::services::page::{CreatePage, PageService};
 use crate::services::site::{CreateSite, CreateSiteOutput, SiteService};
@@ -36,8 +39,12 @@ use anyhow::Result;
 use sea_orm::{
     ConnectionTrait, DatabaseBackend, DatabaseTransaction, Statement, TransactionTrait,
 };
+use serde_json::Value as JsonValue;
 use std::borrow::Cow;
 use std::collections::HashMap;
+use std::fs;
+use std::io::Read;
+use std::path::{Path, PathBuf};
 
 pub async fn seed(state: &ServerState) -> Result<()> {
     info!("Running seeder...");
@@ -67,6 +74,7 @@ pub async fn seed(state: &ServerState) -> Result<()> {
         users,
         sites,
         pages,
+        files,
         filters,
     } = SeedData::load(&state.config.seeder_path)?;
 
@@ -185,6 +193,7 @@ pub async fn seed(state: &ServerState) -> Result<()> {
     }
 
     // Seed page data
+    let mut page_ids = HashMap::new();
     for (site_slug, pages) in pages {
         info!("Creating pages in site {site_slug}");
         let site_id = site_ids[&site_slug];
@@ -201,7 +210,7 @@ pub async fn seed(state: &ServerState) -> Result<()> {
                     alt_title: page.alt_title,
                     slug: page.slug,
                     layout: None,
-                    revision_comments: str!(""),
+                    revision_comments: str!(),
                     user_id: SYSTEM_USER_ID,
                     bypass_filter: true,
                 },
@@ -210,6 +219,134 @@ pub async fn seed(state: &ServerState) -> Result<()> {
 
             // TODO add attribution with site_user as author
             let _ = model;
+
+            page_ids.insert((site_id, model.slug), model.page_id);
+        }
+    }
+
+    // Seed files
+    {
+        // Reused buffer for prepending the seeder path
+        let mut path_buffer = state.config.seeder_path.clone();
+
+        async fn load_file(buffer: &mut PathBuf, file_path: &Path) -> Result<Vec<u8>> {
+            // Make sure that paths are only in the local seeder/ directory,
+            // to avoid pulling random files from the filesystem.
+            assert_eq!(
+                file_path.parent(),
+                Some(Path::new("")),
+                "File paths must not contain any directory component",
+            );
+
+            // Then update the path and retrieve the file body.
+            //
+            // Also check the file type for safety. We're not allowing symlinks for
+            // the same reason we're not allowing non-local paths.
+            buffer.push(file_path);
+
+            let file_path = &buffer;
+            let stat = fs::metadata(file_path)?;
+            assert!(
+                stat.file_type().is_file(),
+                "Only regular files are allowed as file input",
+            );
+
+            let mut data = Vec::new();
+            let mut file = fs::File::open(file_path)?;
+            file.read_to_end(&mut data)?;
+
+            // Clean up
+            buffer.pop();
+
+            // Return value
+            Ok(data)
+        }
+
+        for (site_slug, files) in files {
+            let site_id = site_ids[&site_slug];
+
+            for (page_slug, files) in files {
+                info!("Creating files within site {site_slug} page {page_slug}");
+                let page_id = page_ids[&(site_id, page_slug)];
+
+                for file in files {
+                    info!(
+                        "Creating file '{}' (from {})",
+                        file.name,
+                        file.path.display()
+                    );
+
+                    let data = load_file(&mut path_buffer, &file.path).await?;
+
+                    // Create the file entry
+                    let CreateFileOutput {
+                        file_id,
+                        file_revision_id,
+                        ..
+                    } = FileService::create(
+                        &ctx,
+                        CreateFile {
+                            site_id,
+                            page_id,
+                            name: file.name,
+                            uploaded_blob_id: str!(),
+                            direct_upload: Some(data),
+                            revision_comments: str!(),
+                            user_id: SYSTEM_USER_ID,
+                            licensing: JsonValue::Null,
+                            bypass_filter: true,
+                        },
+                    )
+                    .await?;
+
+                    let mut last_revision_id = file_revision_id;
+
+                    // If we are uploading an extra revision, do so now.
+                    // We can use our helper function to handle the file upload.
+                    if let Some(path) = file.overwrite {
+                        let data = load_file(&mut path_buffer, &path).await?;
+                        let output = FileService::edit(
+                            &ctx,
+                            EditFile {
+                                site_id,
+                                page_id,
+                                file_id,
+                                user_id: SYSTEM_USER_ID,
+                                last_revision_id,
+                                revision_comments: str!(),
+                                bypass_filter: true,
+                                body: EditFileBody {
+                                    name: Maybe::Unset,
+                                    licensing: Maybe::Unset,
+                                    uploaded_blob_id: Maybe::Set(str!()),
+                                    direct_upload: Maybe::Set(data),
+                                },
+                            },
+                        )
+                        .await?;
+
+                        if let Some(output) = output {
+                            last_revision_id = output.file_revision_id;
+                        }
+                    }
+
+                    // If we are deleting the file, do so now.
+                    if file.deleted {
+                        FileService::delete(
+                            &ctx,
+                            DeleteFile {
+                                site_id,
+                                page_id,
+                                file: Reference::Id(file_id),
+                                user_id: SYSTEM_USER_ID,
+                                last_revision_id,
+                                revision_comments: str!(),
+                            },
+                        )
+                        .await?;
+                    }
+                }
+            }
         }
     }
 

@@ -19,10 +19,9 @@
  */
 
 use super::prelude::*;
-use crate::hash::BlobHash;
 use crate::models::sea_orm_active_enums::FileRevisionType;
 use crate::services::page_revision::PageRevisionCountOutput;
-use crate::types::{Bytes, FetchDirection};
+use crate::types::FetchDirection;
 
 #[derive(Debug, Clone)]
 pub struct CreateFileRevision {
@@ -88,7 +87,8 @@ pub struct CreateTombstoneFileRevision {
     pub page_id: i64,
     pub file_id: i64,
     pub user_id: i64,
-    pub comments: String,
+    pub revision_comments: String,
+    pub erase_s3_hash: bool,
 }
 
 #[derive(Deserialize, Debug, Clone)]
@@ -99,7 +99,7 @@ pub struct CreateResurrectionFileRevision {
     pub user_id: i64,
     pub new_page_id: i64,
     pub new_name: String,
-    pub comments: String,
+    pub revision_comments: String,
 }
 
 #[derive(Deserialize, Debug, Clone)]

@@ -112,11 +112,11 @@ impl Localizations {
     }
 
     /// Retrieve the specified Fluent bundle and message.
-    fn get_message<'a>(
-        &'a self,
+    fn get_message(
+        &self,
         locale: &LanguageIdentifier,
         path: &str,
-    ) -> Result<(&'a FluentBundle, FluentMessage), ServiceError> {
+    ) -> Result<(&FluentBundle, FluentMessage), ServiceError> {
         match self.bundles.get(locale) {
             None => Err(ServiceError::LocaleMissing),
             Some(bundle) => match bundle.get_message(path) {
@@ -127,12 +127,12 @@ impl Localizations {
     }
 
     /// Retrieve the specified Fluent pattern from the associated bundle.
-    fn get_pattern<'a>(
-        &'a self,
+    fn get_pattern(
+        &self,
         locale: &LanguageIdentifier,
         path: &str,
         attribute: Option<&str>,
-    ) -> Result<(&'a FluentBundle, &'a Pattern<&'a str>), ServiceError> {
+    ) -> Result<(&FluentBundle, &Pattern<&str>), ServiceError> {
         debug!("Checking for translation patterns in locale {locale}");
 
         // Get appropriate message and bundle, if found

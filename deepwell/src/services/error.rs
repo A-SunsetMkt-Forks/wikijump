@@ -18,6 +18,7 @@
  * along with this program. If not, see <http://www.gnu.org/licenses/>.
  */
 
+use crate::hash::{blob_hash_to_hex, BlobHash};
 use filemagic::FileMagicError;
 use jsonrpsee::types::error::ErrorObjectOwned;
 use reqwest::Error as ReqwestError;
@@ -249,7 +250,15 @@ pub enum Error {
     BlobTooBig,
 
     #[error("Uploaded blob does not match expected length")]
-    BlobSizeMismatch,
+    BlobSizeMismatch { expected: usize, actual: usize },
+
+    #[error("Uploaded blob content is blacklisted")]
+    BlobBlacklisted(BlobHash),
+
+    #[error(
+        "Cannot blacklist a blob which is already in use, you must do a hard deletion"
+    )]
+    BlobCannotBlacklistExisting,
 
     #[error("Text item does not exist")]
     TextNotFound,
@@ -390,8 +399,10 @@ impl Error {
             Error::BlobWrongUser => 4022,
             Error::BlobTooBig => 4023,
             Error::BlobNotUploaded => 4024,
-            Error::BlobSizeMismatch => 4025,
-            Error::NotLatestRevisionId => 4027,
+            Error::BlobSizeMismatch { .. } => 4025,
+            Error::BlobBlacklisted(_) => 4026,
+            Error::BlobCannotBlacklistExisting => 4027,
+            Error::NotLatestRevisionId => 4028,
 
             // 4100 -- Localization
             Error::LocaleInvalid(_) => 4100,
@@ -441,6 +452,10 @@ impl Error {
                 "active_user_id": active_user_id,
                 "session_user_id": session_user_id,
             }),
+            Error::BlobSizeMismatch { expected, actual } => json!({
+                "expected": expected,
+                "actual": actual,
+            }),
 
             // Emit as-is
             Error::EmailVerification(value) => json!(value),
@@ -455,6 +470,9 @@ impl Error {
             Error::S3Service(value) => json!(format!("{value:?}")),
             Error::WebRequest(value) => json!(format!("{value:?}")),
             Error::FilterRegexInvalid(value) => json!(format!("{value:?}")),
+
+            // Emit as hexadecimal bytes
+            Error::BlobBlacklisted(bytes) => json!(*blob_hash_to_hex(bytes)),
 
             // Other cases are null enums or the values are ignored
             _ => json!(null),

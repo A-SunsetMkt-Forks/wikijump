@@ -263,6 +263,15 @@ async fn build_module(app_state: ServerState) -> anyhow::Result<RpcModule<Server
     register!("blob_upload", blob_upload);
     register!("blob_cancel", blob_cancel);
 
+    // Blob hard deletion
+    register!("blob_hard_delete_preview", blob_hard_delete_preview);
+    register!("blob_hard_delete_confirm", blob_hard_delete_confirm);
+
+    // Blob blacklist
+    register!("blob_blacklist_add", blob_blacklist_add);
+    register!("blob_blacklist_remove", blob_blacklist_remove);
+    register!("blob_blacklist_check", blob_blacklist_check);
+
     // Files
     register!("file_create", file_create);
     register!("file_edit", file_edit);
@@ -271,7 +280,6 @@ async fn build_module(app_state: ServerState) -> anyhow::Result<RpcModule<Server
     register!("file_move", file_move);
     register!("file_restore", file_restore);
     register!("file_rollback", file_rollback);
-    register!("file_hard_delete", file_hard_delete);
 
     // File revisions
     register!("file_revision_get", file_revision_get);

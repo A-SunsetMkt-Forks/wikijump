@@ -21,13 +21,13 @@
 use super::prelude::*;
 use crate::models::file::Model as FileModel;
 use crate::models::file_revision::Model as FileRevisionModel;
-use crate::services::blob::BlobService;
 use crate::services::file::{
     CreateFile, CreateFileOutput, DeleteFile, DeleteFileOutput, EditFile, EditFileOutput,
     GetFileDetails, GetFileOutput, MoveFile, MoveFileOutput, RestoreFile,
     RestoreFileOutput, RollbackFile,
 };
 use crate::services::Result;
+use crate::services::{BlobService, FileRevisionService};
 use crate::types::{Bytes, FileDetails};
 
 pub async fn file_get(
@@ -101,6 +101,20 @@ pub async fn file_delete(
     FileService::delete(ctx, input).await
 }
 
+pub async fn file_move(
+    ctx: &ServiceContext<'_>,
+    params: Params<'static>,
+) -> Result<Option<MoveFileOutput>> {
+    let input: MoveFile = params.parse()?;
+
+    info!(
+        "Moving file ID {} from page ID {} to page ID {} in site ID {}",
+        input.file_id, input.current_page_id, input.destination_page_id, input.site_id,
+    );
+
+    FileService::r#move(ctx, input).await
+}
+
 pub async fn file_restore(
     ctx: &ServiceContext<'_>,
     params: Params<'static>,
@@ -127,33 +141,6 @@ pub async fn file_rollback(
     );
 
     FileService::rollback(ctx, input).await
-}
-
-pub async fn file_move(
-    ctx: &ServiceContext<'_>,
-    params: Params<'static>,
-) -> Result<Option<MoveFileOutput>> {
-    let input: MoveFile = params.parse()?;
-
-    info!(
-        "Moving file ID {} from page ID {} to page ID {} in site ID {}",
-        input.file_id, input.current_page_id, input.destination_page_id, input.site_id,
-    );
-
-    FileService::r#move(ctx, input).await
-}
-
-pub async fn file_hard_delete(
-    ctx: &ServiceContext<'_>,
-    params: Params<'static>,
-) -> Result<()> {
-    let file_id: i64 = params.one()?;
-
-    info!(
-        "Hard deleting file ID {file_id} and all duplicates, including underlying data",
-    );
-
-    FileService::hard_delete_all(ctx, file_id).await
 }
 
 async fn build_file_response(

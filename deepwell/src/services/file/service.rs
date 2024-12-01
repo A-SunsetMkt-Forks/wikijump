@@ -33,6 +33,7 @@ use crate::services::file_revision::{
 };
 use crate::services::filter::{FilterClass, FilterType};
 use crate::services::{BlobService, FileRevisionService, FilterService};
+use crate::types::FileOrder;
 use sea_orm::ActiveValue;
 
 #[derive(Debug)]
@@ -52,6 +53,7 @@ impl FileService {
             page_id,
             name,
             uploaded_blob_id,
+            direct_upload,
             revision_comments,
             user_id,
             licensing,
@@ -60,6 +62,9 @@ impl FileService {
     ) -> Result<CreateFileOutput> {
         info!("Creating file with name '{}'", name);
         let txn = ctx.transaction();
+
+        // Verify filename is valid
+        check_file_name(&name)?;
 
         // Ensure row consistency
         Self::check_conflicts(ctx, page_id, &name, "create").await?;
@@ -71,11 +76,23 @@ impl FileService {
 
         // Finish blob upload
         let FinalizeBlobUploadOutput {
-            hash: s3_hash,
+            s3_hash,
             mime: mime_hint,
             size: size_hint,
             created: blob_created,
-        } = BlobService::finish_upload(ctx, user_id, &uploaded_blob_id).await?;
+        } = match direct_upload {
+            None => {
+                // Normal path, finish upload of blob from user
+                BlobService::finish_upload(ctx, user_id, &uploaded_blob_id).await?
+            }
+            Some(data) => {
+                // Special path, used only internally to directly upload a blob,
+                // for instance in the seeder
+                //
+                // This should always be None when called from API users
+                BlobService::direct_upload(ctx, data).await?
+            }
+        };
 
         // Add new file
         let model = file::ActiveModel {
@@ -131,6 +148,7 @@ impl FileService {
             name,
             licensing,
             uploaded_blob_id,
+            direct_upload,
         } = body;
 
         let mut new_name = ActiveValue::NotSet;
@@ -140,6 +158,7 @@ impl FileService {
         // If the name isn't changing, then we already verified this
         // when the file was originally created.
         if let Maybe::Set(ref name) = name {
+            check_file_name(name)?;
             Self::check_conflicts(ctx, page_id, name, "update").await?;
             new_name = ActiveValue::Set(name.clone());
 
@@ -156,11 +175,21 @@ impl FileService {
             Maybe::Unset => Maybe::Unset,
             Maybe::Set(ref id) => {
                 let FinalizeBlobUploadOutput {
-                    hash: s3_hash,
+                    s3_hash,
                     mime: mime_hint,
                     size: size_hint,
                     created: blob_created,
-                } = BlobService::finish_upload(ctx, user_id, id).await?;
+                } = match direct_upload {
+                    Maybe::Unset => {
+                        // Normal path, finish upload of blob from user
+                        BlobService::finish_upload(ctx, user_id, id).await?
+                    }
+                    Maybe::Set(data) => {
+                        // Special path, used only internally to directly upload a blob
+                        // See FileService::create()
+                        BlobService::direct_upload(ctx, data).await?
+                    }
+                };
 
                 Maybe::Set(FileBlob {
                     s3_hash,
@@ -233,6 +262,9 @@ impl FileService {
             file_id, current_page_id, destination_page_id,
         );
 
+        // Verify filename is valid
+        check_file_name(&name)?;
+
         // Ensure there isn't a file with this name on the destination page
         Self::check_conflicts(ctx, destination_page_id, &name, "move").await?;
 
@@ -275,6 +307,28 @@ impl FileService {
     /// to be easily reverted.
     pub async fn delete(
         ctx: &ServiceContext<'_>,
+        input: DeleteFile<'_>,
+    ) -> Result<DeleteFileOutput> {
+        Self::delete_inner(ctx, input, false).await
+    }
+
+    /// Deletes this file, erasing its S3 hash in the tombstone revision.
+    ///
+    /// This is used as part of the hard deletion implementation, in the step
+    /// prior to erasing and hiding the S3 hash in all affected files.
+    pub async fn delete_with_erased_s3_hash(
+        ctx: &ServiceContext<'_>,
+        input: DeleteFile<'_>,
+    ) -> Result<DeleteFileOutput> {
+        Self::delete_inner(ctx, input, true).await
+    }
+
+    /// Performs a file deletion.
+    ///
+    /// Contains a flag for determining if the S3 hash of the file being deleted should be wiped,
+    /// as part of the hard deletion implementation.
+    async fn delete_inner(
+        ctx: &ServiceContext<'_>,
         DeleteFile {
             last_revision_id,
             revision_comments,
@@ -283,6 +337,7 @@ impl FileService {
             file: reference,
             user_id,
         }: DeleteFile<'_>,
+        erase_s3_hash: bool,
     ) -> Result<DeleteFileOutput> {
         let txn = ctx.transaction();
 
@@ -311,7 +366,8 @@ impl FileService {
                 page_id,
                 file_id,
                 user_id,
-                comments: revision_comments,
+                revision_comments,
+                erase_s3_hash,
             },
             last_revision,
         )
@@ -383,7 +439,7 @@ impl FileService {
                 user_id,
                 new_page_id,
                 new_name: new_name.clone(),
-                comments: revision_comments,
+                revision_comments,
             },
             last_revision,
         )
@@ -554,6 +610,42 @@ impl FileService {
         find_or_error!(Self::get_optional(ctx, input), File)
     }
 
+    /// Gets all files on a page, with potential conditions.
+    ///
+    /// The `deleted` argument:
+    /// * If it is `Some(true)`, then it only returns pages which have been deleted.
+    /// * If it is `Some(false)`, then it only returns pages which are extant.
+    /// * If it is `None`, then it returns all pages regardless of deletion status.
+    // TODO add pagination
+    #[allow(dead_code)] // TEMP
+    pub async fn get_all(
+        ctx: &ServiceContext<'_>,
+        site_id: i64,
+        page_id: i64,
+        deleted: Option<bool>,
+        order: FileOrder,
+    ) -> Result<Vec<FileModel>> {
+        let txn = ctx.transaction();
+        let deleted_condition = match deleted {
+            Some(true) => Some(file::Column::DeletedAt.is_not_null()),
+            Some(false) => Some(file::Column::DeletedAt.is_null()),
+            None => None,
+        };
+
+        let files = File::find()
+            .filter(
+                Condition::all()
+                    .add(file::Column::SiteId.eq(site_id))
+                    .add(file::Column::PageId.eq(page_id))
+                    .add_option(deleted_condition),
+            )
+            .order_by(order.column.into_column(), order.direction)
+            .all(txn)
+            .await?;
+
+        Ok(files)
+    }
+
     /// Gets the file ID from a reference, looking up if necessary.
     ///
     /// Convenience method since this is much more common than the optional
@@ -619,26 +711,6 @@ impl FileService {
         find_or_error!(Self::get_direct_optional(ctx, file_id, allow_deleted), File)
     }
 
-    /// Hard deletes this file and all duplicates.
-    ///
-    /// This is a very powerful method and needs to be used carefully.
-    /// It should only be accessible to platform staff.
-    ///
-    /// As opposed to normal soft deletions, this method will completely
-    /// remove a file from Wikijump. The file rows will be deleted themselves,
-    /// and will cascade to any places where file IDs are used.
-    ///
-    /// This method should only be used very rarely to clear content such
-    /// as severe copyright violations, abuse content, or comply with court orders.
-    pub async fn hard_delete_all(_ctx: &ServiceContext<'_>, _file_id: i64) -> Result<()> {
-        // TODO find hash. update all files with the same hash
-        // TODO if hash == 00000 then error
-        // TODO add to audit log
-        // TODO hard delete BlobService
-
-        todo!()
-    }
-
     /// Checks to see if a file already exists at the name specified.
     ///
     /// If so, this method fails with `Error::FileExists`. Otherwise it returns nothing.
@@ -697,6 +769,12 @@ impl FileService {
 
         Ok(())
     }
+}
+
+/// Verifies that this filename is valid.
+fn check_file_name(_name: &str) -> Result<()> {
+    // TODO https://scuttle.atlassian.net/browse/WJ-1288
+    Ok(())
 }
 
 /// Verifies that the `last_revision_id` argument is the most recent.

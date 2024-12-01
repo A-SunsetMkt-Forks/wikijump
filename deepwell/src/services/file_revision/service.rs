@@ -19,13 +19,16 @@
  */
 
 use super::prelude::*;
+use crate::hash::{blob_hash_to_hex, slice_to_blob_hash, BlobHash};
 use crate::models::file_revision::{
     self, Entity as FileRevision, Model as FileRevisionModel,
 };
+use crate::models::{file, page, site};
 use crate::services::blob::{FinalizeBlobUploadOutput, EMPTY_BLOB_HASH, EMPTY_BLOB_MIME};
 use crate::services::{BlobService, OutdateService, PageService};
 use crate::types::{Bytes, FetchDirection};
 use once_cell::sync::Lazy;
+use sea_orm::{prelude::*, FromQueryResult};
 use std::num::NonZeroI32;
 
 pub const MAXIMUM_FILE_NAME_LENGTH: usize = 256;
@@ -259,21 +262,31 @@ impl FileRevisionService {
             page_id,
             file_id,
             user_id,
-            comments,
+            revision_comments,
+            erase_s3_hash,
         }: CreateTombstoneFileRevision,
         previous: FileRevisionModel,
     ) -> Result<CreateFileRevisionOutput> {
         let txn = ctx.transaction();
         let revision_number = next_revision_number(&previous, page_id, file_id);
 
+        let mut hidden = Vec::new();
         let FileRevisionModel {
             name,
-            s3_hash,
+            mut s3_hash,
             mime_hint,
             size_hint,
             licensing,
             ..
         } = previous;
+
+        if erase_s3_hash {
+            // Replace S3 hash for tombstone revision with empty data
+            s3_hash.copy_from_slice(&EMPTY_BLOB_HASH);
+
+            // Also block the s3_hash column for this revision
+            hidden.push(str!("s3_hash"));
+        }
 
         // Run outdater
         let page_slug = Self::get_page_slug(ctx, site_id, page_id).await?;
@@ -293,8 +306,8 @@ impl FileRevisionService {
             size_hint: Set(size_hint),
             licensing: Set(licensing),
             changes: Set(vec![]),
-            comments: Set(comments),
-            hidden: Set(vec![]),
+            comments: Set(revision_comments),
+            hidden: Set(hidden),
             ..Default::default()
         };
 
@@ -332,7 +345,7 @@ impl FileRevisionService {
             user_id,
             new_page_id,
             new_name,
-            comments,
+            revision_comments,
         }: CreateResurrectionFileRevision,
         previous: FileRevisionModel,
     ) -> Result<CreateFileRevisionOutput> {
@@ -381,7 +394,7 @@ impl FileRevisionService {
             size_hint: Set(size_hint),
             licensing: Set(licensing),
             changes: Set(changes),
-            comments: Set(comments),
+            comments: Set(revision_comments),
             hidden: Set(vec![]),
             ..Default::default()
         };

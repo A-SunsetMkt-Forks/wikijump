@@ -1,5 +1,5 @@
 /*
- * types/page_order.rs
+ * types/file_order.rs
  *
  * DEEPWELL - Wikijump API provider and database manager
  * Copyright (C) 2019-2024 Wikijump Team
@@ -18,71 +18,71 @@
  * along with this program. If not, see <http://www.gnu.org/licenses/>.
  */
 
-use crate::models::page;
+use crate::models::file;
 use sea_orm::query::Order;
 
-/// Describes what order pages should be retrieved in.
+/// Describes what order files should be retrieved in.
 ///
 /// It is composed of two components:
-/// * `column`    -- The `PageOrderColumn` describing what column to order by.
+/// * `column`    -- The `FileOrderColumn` describing what column to order by.
 /// * `direction` -- Whether the order should be ascending or descending. (See [`Order`])
 ///
 /// [`Order`]: https://docs.rs/sea-orm/latest/sea_orm/query/enum.Order.html
 #[derive(Debug, Clone, PartialEq)]
-pub struct PageOrder {
-    pub column: PageOrderColumn,
+pub struct FileOrder {
+    pub column: FileOrderColumn,
     pub direction: Order,
 }
 
-impl Default for PageOrder {
+impl Default for FileOrder {
     #[inline]
     fn default() -> Self {
-        PageOrder {
-            column: PageOrderColumn::default(),
+        FileOrder {
+            column: FileOrderColumn::default(),
             direction: Order::Asc,
         }
     }
 }
 
-/// Describes what column that pages should be ordered by.
+/// Describes what column that files should be ordered by.
 #[derive(Serialize, Deserialize, Debug, Default, Copy, Clone, PartialEq, Eq)]
 #[serde(rename_all = "kebab-case")]
-pub enum PageOrderColumn {
-    /// Requests pages in page ID order.
+pub enum FileOrderColumn {
+    /// Requests files in file ID order.
     /// This is the default.
     #[default]
     Id,
 
-    /// Requests pages in page creation order.
-    /// For most purposes this is the same as `PageOrderColumn::Id`.
+    /// Requests files in file creation order.
+    /// For most purposes this is the same as `FileOrderColumn::Id`.
     Creation,
 
-    /// Requests pages in page update order.
+    /// Requests files in file update order.
     Update,
 
-    /// Requests pages in page deletion order.
+    /// Requests files in file deletion order.
     Deletion,
 
-    /// Requests pages in slug order.
-    Slug,
+    /// Requests files in file name order.
+    Name,
 }
 
-impl PageOrderColumn {
+impl FileOrderColumn {
     #[inline]
-    pub fn into_column(self) -> page::Column {
+    pub fn into_column(self) -> file::Column {
         self.into()
     }
 }
 
-/// Conversion functions for `PageOrder` to a column.
-impl From<PageOrderColumn> for page::Column {
-    fn from(order: PageOrderColumn) -> page::Column {
+/// Conversion functions for `FileOrder` to a column.
+impl From<FileOrderColumn> for file::Column {
+    fn from(order: FileOrderColumn) -> file::Column {
         match order {
-            PageOrderColumn::Id => page::Column::PageId,
-            PageOrderColumn::Creation => page::Column::CreatedAt,
-            PageOrderColumn::Update => page::Column::UpdatedAt,
-            PageOrderColumn::Deletion => page::Column::DeletedAt,
-            PageOrderColumn::Slug => page::Column::Slug,
+            FileOrderColumn::Id => file::Column::FileId,
+            FileOrderColumn::Creation => file::Column::CreatedAt,
+            FileOrderColumn::Update => file::Column::UpdatedAt,
+            FileOrderColumn::Deletion => file::Column::DeletedAt,
+            FileOrderColumn::Name => file::Column::Name,
         }
     }
 }

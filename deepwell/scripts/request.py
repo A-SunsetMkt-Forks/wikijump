@@ -19,6 +19,14 @@ def color_settings(value):
             return False
 
 
+def parse_data(value):
+    try:
+        return json.loads(value)
+    except json.decoder.JSONDecodeError:
+        # Just interpret as a string
+        return value
+
+
 def print_data(data):
     if isinstance(data, str):
         print(data)
@@ -32,15 +40,22 @@ def print_data(data):
 
 
 def deepwell_request(endpoint, method, data, id=0, color=False):
-    r = requests.post(
-        endpoint,
-        json={
-            "jsonrpc": "2.0",
-            "method": method,
-            "params": data,
-            "id": id,
-        },
-    )
+    try:
+        r = requests.post(
+            endpoint,
+            json={
+                "jsonrpc": "2.0",
+                "method": method,
+                "params": data,
+                "id": id,
+            },
+        )
+    except KeyboardInterrupt:
+        print("Interrupted!")
+        return -1
+    except Exception as exc:
+        print(f"Error: {exc}")
+        return 1
 
     if color:
         green_start = "\x1b[32m"
@@ -98,7 +113,7 @@ if __name__ == "__main__":
         default="auto",
     )
     argparser.add_argument("method")
-    argparser.add_argument("data", nargs="?", type=json.loads, default="{}")
+    argparser.add_argument("data", nargs="?", type=parse_data, default="{}")
     args = argparser.parse_args()
     enable_color = color_settings(args.color)
 
