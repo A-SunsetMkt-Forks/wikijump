@@ -714,6 +714,33 @@ impl BlobService {
         }
     }
 
+    /// Checks that a blob hash is not presently used anywhere in the system.
+    ///
+    /// If this is the case, then a hard deletion is needed instead to purge
+    /// this object from data storage.
+    pub(crate) async fn check_hash_in_use(
+        ctx: &ServiceContext<'_>,
+        hash: BlobHash,
+    ) -> Result<()> {
+        let txn = ctx.transaction();
+        let count = FileRevision::find()
+            .select_only()
+            .column_as(file_revision::Column::RevisionId.count(), "count")
+            .filter(file_revision::Column::S3Hash.eq(hash.as_slice()))
+            .into_tuple::<i64>()
+            .one(txn)
+            .await?
+            .expect("No results from COUNT aggregate query");
+
+        if count > 0 {
+            error!("Cannot blacklist a blob that is already in use (found {count} uses)");
+            Err(Error::BadRequest)
+        } else {
+            debug!("Found no current uses of blob to be blacklisted");
+            Ok(())
+        }
+    }
+
     pub async fn add_blacklist(
         ctx: &ServiceContext<'_>,
         hash: BlobHash,

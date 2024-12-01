@@ -91,6 +91,7 @@ pub async fn blob_blacklist_add(
     let s3_hash = slice_to_blob_hash(s3_hash.as_ref());
 
     BlobService::check_hash_not_empty(s3_hash)?;
+    BlobService::check_hash_in_use(ctx, s3_hash).await?;
     BlobService::add_blacklist(ctx, s3_hash, user_id).await
 }
 
