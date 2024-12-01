@@ -147,6 +147,9 @@ pub enum Error {
     #[error("File name too long")]
     FileNameTooLong,
 
+    #[error("File name contains invalid characters (control chars or slashes)")]
+    FileNameInvalidCharacters,
+
     #[error("File MIME type cannot be empty")]
     FileMimeEmpty,
 
@@ -382,6 +385,7 @@ impl Error {
             Error::FilterNotDeleted => 4006,
             Error::FileNameEmpty => 4007,
             Error::FileNameTooLong => 4008,
+            Error::FileNameInvalidCharacters => 4029,
             Error::FileMimeEmpty => 4009,
             Error::FileNotDeleted => 4010,
             Error::PageNotDeleted => 4011,
