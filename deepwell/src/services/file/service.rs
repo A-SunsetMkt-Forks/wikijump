@@ -787,6 +787,7 @@ impl FileService {
 fn check_file_name(name: &mut String) -> Result<()> {
     // Removes leading or trailing whitespace
     regex_replace_in_place(name, &LEADING_TRAILING_SPACES, "");
+    debug!("Trimmed file name: {name}");
 
     // Disallow empty filenames
     if name.is_empty() {
