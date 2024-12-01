@@ -323,7 +323,7 @@ impl BlobService {
             Self::cancel_upload(ctx, pending_blob_user_id, pending_blob_id).await?;
 
             // Finally, return error
-            return Err(Error::BlobBlacklisted);
+            return Err(Error::BlobBlacklisted(result.s3_hash));
         }
 
         // Update pending blob with hash

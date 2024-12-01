@@ -18,6 +18,7 @@
  * along with this program. If not, see <http://www.gnu.org/licenses/>.
  */
 
+use crate::hash::{blob_hash_to_hex, BlobHash};
 use filemagic::FileMagicError;
 use jsonrpsee::types::error::ErrorObjectOwned;
 use reqwest::Error as ReqwestError;
@@ -252,7 +253,7 @@ pub enum Error {
     BlobSizeMismatch,
 
     #[error("Uploaded blob content is blacklisted")]
-    BlobBlacklisted,
+    BlobBlacklisted(BlobHash),
 
     #[error("Text item does not exist")]
     TextNotFound,
@@ -394,7 +395,7 @@ impl Error {
             Error::BlobTooBig => 4023,
             Error::BlobNotUploaded => 4024,
             Error::BlobSizeMismatch => 4025,
-            Error::BlobBlacklisted => 4026,
+            Error::BlobBlacklisted(_) => 4026,
             Error::NotLatestRevisionId => 4027,
 
             // 4100 -- Localization
@@ -459,6 +460,9 @@ impl Error {
             Error::S3Service(value) => json!(format!("{value:?}")),
             Error::WebRequest(value) => json!(format!("{value:?}")),
             Error::FilterRegexInvalid(value) => json!(format!("{value:?}")),
+
+            // Emit as hexadecimal bytes
+            Error::BlobBlacklisted(bytes) => json!(*blob_hash_to_hex(bytes)),
 
             // Other cases are null enums or the values are ignored
             _ => json!(null),
