@@ -497,10 +497,7 @@ impl BlobService {
         //       If there's no user ID to record as responsible, it must necessarily
         //       be a dry run.
 
-        if s3_hash == EMPTY_BLOB_HASH {
-            error!("Cannot hard delete the empty blob");
-            return Err(Error::BadRequest);
-        }
+        Self::check_hash_not_empty(s3_hash)?;
 
         let mut revisions = SamplerCounter::new();
         let mut files = SamplerCounter::new();
@@ -704,12 +701,32 @@ impl BlobService {
 
     // Blacklist operations
 
+    /// Verifies that the blob hash to blacklist is not the static empty blob.
+    ///
+    /// After all it makes no sense to blacklist empty files, and doing so
+    /// would cause some issues internally.
+    pub(crate) fn check_hash_not_empty(hash: BlobHash) -> Result<()> {
+        if hash == EMPTY_BLOB_HASH {
+            error!("Cannot hard delete the empty blob");
+            Err(Error::BadRequest)
+        } else {
+            Ok(())
+        }
+    }
+
     pub async fn add_blacklist(
         ctx: &ServiceContext<'_>,
         hash: BlobHash,
         created_by: i64,
     ) -> Result<()> {
         info!("Adding hash {} to blacklist", blob_hash_to_hex(&hash));
+
+        // This should never happen because the callers already
+        // should be calling hash_not_empty()
+        debug_assert_ne!(
+            hash, EMPTY_BLOB_HASH,
+            "Empty blob hash passed to add_blacklist()",
+        );
 
         if Self::on_blacklist(ctx, hash).await? {
             debug!("Already blacklisted, skipping");
