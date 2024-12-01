@@ -19,9 +19,24 @@ def chdir_wikijump():
 if __name__ == "__main__":
     # Parse arguments
     argparser = argparse.ArgumentParser()
-    argparser.add_argument("-S", "--sudo", action="store_true", help="Runs the docker-compose command using sudo")
-    argparser.add_argument("-d", "--no-dev", action="store_true", help="Do not use the docker-compose.dev.yaml convenience bindings")
-    argparser.add_argument("-x", "--no-chdir", action="store_true", help="Do not change directory before attempting to run docker-compose")
+    argparser.add_argument(
+        "-S",
+        "--sudo",
+        action="store_true",
+        help="Runs the docker-compose command using sudo",
+    )
+    argparser.add_argument(
+        "-d",
+        "--no-dev",
+        action="store_true",
+        help="Do not use the docker-compose.dev.yaml convenience bindings",
+    )
+    argparser.add_argument(
+        "-x",
+        "--no-chdir",
+        action="store_true",
+        help="Do not change directory before attempting to run docker-compose",
+    )
     argparser.add_argument("action", nargs=argparse.REMAINDER)
     args = argparser.parse_args()
 
@@ -48,5 +63,5 @@ if __name__ == "__main__":
 
     # We use exec instead of subprocess since this is just a launch script,
     # it doesn't need to do any work after starting docker-compose.
-    print(" ".join(cmdline)})
+    print(" ".join(cmdline))
     os.execvp(cmdline[0], cmdline)
