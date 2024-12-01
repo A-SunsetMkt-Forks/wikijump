@@ -145,7 +145,7 @@ pub enum Error {
     FileNameEmpty,
 
     #[error("File name too long")]
-    FileNameTooLong,
+    FileNameTooLong { length: usize, maximum: usize },
 
     #[error("File name contains invalid characters (control chars or slashes)")]
     FileNameInvalidCharacters,
@@ -384,7 +384,7 @@ impl Error {
             Error::FilterRegexInvalid(_) => 4005,
             Error::FilterNotDeleted => 4006,
             Error::FileNameEmpty => 4007,
-            Error::FileNameTooLong => 4008,
+            Error::FileNameTooLong { .. } => 4008,
             Error::FileNameInvalidCharacters => 4029,
             Error::FileMimeEmpty => 4009,
             Error::FileNotDeleted => 4010,
@@ -459,6 +459,10 @@ impl Error {
             Error::BlobSizeMismatch { expected, actual } => json!({
                 "expected": expected,
                 "actual": actual,
+            }),
+            Error::FileNameTooLong { length, maximum } => json!({
+                "length": length,
+                "maximum": maximum,
             }),
 
             // Emit as-is
