@@ -265,7 +265,7 @@ async fn build_module(app_state: ServerState) -> anyhow::Result<RpcModule<Server
 
     // Blob hard deletion
     register!("blob_hard_delete_list", blob_hard_delete_list);
-    register!("blob_hard_delete", blob_hard_delete);
+    register!("blob_hard_delete_confirm", blob_hard_delete_confirm);
 
     // Blob blacklist
     register!("blob_blacklist_add", blob_blacklist_add);

@@ -134,7 +134,7 @@ pub async fn blob_hard_delete_list(
     BlobService::hard_delete_list(ctx, s3_hash).await
 }
 
-pub async fn blob_hard_delete(
+pub async fn blob_hard_delete_confirm(
     ctx: &ServiceContext<'_>,
     params: Params<'static>,
 ) -> Result<HardDeleteOutput> {
