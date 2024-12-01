@@ -54,7 +54,7 @@ impl UserService {
         let txn = ctx.transaction();
         let slug = get_user_slug(&name, user_type);
 
-        debug!("Normalizing user data (name '{}', slug '{}')", name, slug,);
+        debug!("Normalizing user data (name '{}', slug '{}')", name, slug);
         regex_replace_in_place(&mut name, &LEADING_TRAILING_CHARS, "");
 
         info!("Attempting to create user '{}' ('{}')", name, slug);
