@@ -4,8 +4,8 @@ on:
   pull_request:
     paths:
       - 'web/database/**'
-      - 'install/files/postgres/**'
-      - 'install/local/dev/postgres/Dockerfile'
+      - 'install/common/postgres/**'
+      - 'install/local/postgres/Dockerfile'
       - '.github/workflows/docker-build-postgres.local.yaml'
 
 jobs:
@@ -16,6 +16,6 @@ jobs:
         uses: actions/checkout@v2
 
       - name: Build image
-        run: docker build -f install/local/dev/postgres/Dockerfile .
+        run: docker build -f install/local/postgres/Dockerfile .
         env:
           DOCKER_BUILDKIT: 1

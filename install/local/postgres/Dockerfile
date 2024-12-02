@@ -3,7 +3,7 @@ FROM postgres:16-alpine
 EXPOSE 5432
 
 # Build variables
-ARG ENVIRONMENT="prod"
+ARG ENVIRONMENT="local"
 ARG FILES_DOMAIN="wjfiles.test"
 
 # Create system user
@@ -16,5 +16,5 @@ RUN apk add --no-cache \
     sudo
 
 # Install files
-COPY ./install/files/postgres/init /docker-entrypoint-initdb.d
-COPY ./install/files/postgres/health-check.sh /bin/wikijump-health-check
+COPY ./install/local/postgres/init /docker-entrypoint-initdb.d
+COPY ./install/local/postgres/health-check.sh /bin/wikijump-health-check

@@ -3,64 +3,64 @@ services:
     volumes:
       # Rust sources
       - type: bind
-        source: ../../../deepwell/src
+        source: ../../deepwell/src
         target: /src/deepwell/src
         read_only: true
       - type: bind
-        source: ../../../deepwell/build.rs
+        source: ../../deepwell/build.rs
         target: /src/deepwell/build.rs
         read_only: true
       - type: bind
-        source: ../../../deepwell/Cargo.toml
+        source: ../../deepwell/Cargo.toml
         target: /src/deepwell/Cargo.toml
         read_only: true
       # Database files
       - type: bind
-        source: ../../../deepwell/migrations
+        source: ../../deepwell/migrations
         target: /src/deepwell/migrations
         read_only: true
       - type: bind
-        source: ../../../deepwell/seeder
+        source: ../../deepwell/seeder
         target: /src/deepwell/seeder
         read_only: true
       # Configuration data
       - type: bind
-        source: ../../../install/files/local/deepwell.toml
+        source: ../../install/local/api/deepwell.toml
         target: /etc/deepwell.toml
       # Translation data
       - type: bind
-        source: ../../../locales
+        source: ../../locales
         target: /opt/locales
         read_only: true
   web:
     volumes:
       # Typescript/Svelte files
       - type: bind
-        source: ../../../framerail/src
+        source: ../../framerail/src
         target: /app/src
         read_only: true
       - type: bind
-        source: ../../../framerail/static
+        source: ../../framerail/static
         target: /app/static
         read_only: true
       - type: bind
-        source: ../../../framerail/package.json
+        source: ../../framerail/package.json
         target: /app/package.json
         read_only: true
       - type: bind
-        source: ../../../framerail/pnpm-lock.yaml
+        source: ../../framerail/pnpm-lock.yaml
         target: /app/pnpm-lock.yaml
         read_only: true
       - type: bind
-        source: ../../../framerail/svelte.config.js
+        source: ../../framerail/svelte.config.js
         target: /app/svelte.config.js
         read_only: true
       - type: bind
-        source: ../../../framerail/vite.config.ts
+        source: ../../framerail/vite.config.ts
         target: /app/vite.config.ts
         read_only: true
       # Assets
       - type: bind
-        source: ../../../assets
+        source: ../../assets
         target: /app/src/assets
         read_only: true

@@ -5,8 +5,8 @@
   "scripts": {
     "build-container": "vite build && cd web && pnpm -s build",
     "changeset": "changeset",
-    "compose": "cd ../install/local/dev && cross-env DOCKER_BUILDKIT=1 docker-compose -p wikijump -f docker-compose.yaml -f docker-compose.dev.yaml",
-    "compose-sudo": "cd ../install/local/dev && cross-env DOCKER_BUILDKIT=1 sudo -E docker-compose -p wikijump -f docker-compose.yaml -f docker-compose.dev.yaml",
+    "compose": "cd ../install/local && cross-env DOCKER_BUILDKIT=1 docker-compose -p wikijump -f docker-compose.yaml -f docker-compose.dev.yaml",
+    "compose-sudo": "cd ../install/local && cross-env DOCKER_BUILDKIT=1 sudo -E docker-compose -p wikijump -f docker-compose.yaml -f docker-compose.dev.yaml",
     "cover": "vitest --coverage --run",
     "dev": "esr scripts/dev.js",
     "lint": "run-p -lns lint:eslint lint:stylelint lint:prettier",

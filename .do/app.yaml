@@ -19,7 +19,7 @@ domains:
 services:
   - name: framerail
     source_dir: .
-    dockerfile_path: install/dev/digitalocean/web/Dockerfile
+    dockerfile_path: install/dev/web/Dockerfile
     github:
       repo: scpwiki/wikijump
       branch: develop
@@ -34,7 +34,7 @@ services:
 
   - name: deepwell
     source_dir: .
-    dockerfile_path: install/dev/digitalocean/api/Dockerfile
+    dockerfile_path: install/dev/api/Dockerfile
     github:
       repo: scpwiki/wikijump
       branch: develop

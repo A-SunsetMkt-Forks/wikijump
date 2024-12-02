@@ -40,10 +40,10 @@ COPY --from=rust /usr/local/cargo/bin/sqlx /usr/local/cargo/bin/sqlx
 COPY --from=rust /src/deepwell/target/release/deepwell /usr/local/bin/deepwell
 COPY --from=rust /src/deepwell/migrations /opt/database/migrations
 COPY --from=rust /src/deepwell/seeder /opt/database/seeder
-COPY install/files/dev/deepwell.toml /etc/deepwell.toml
-COPY install/files/dev/deepwell-start /usr/local/bin/wikijump-deepwell-start
-COPY install/files/api/health-check.sh /usr/local/bin/wikijump-health-check
-COPY locales/fluent /opt/locales/fluent
+COPY ./install/dev/api/deepwell.toml /etc/deepwell.toml
+COPY ./install/dev/api/deepwell-start /usr/local/bin/wikijump-deepwell-start
+COPY ./install/dev/api/health-check.sh /usr/local/bin/wikijump-health-check
+COPY ./locales/fluent /opt/locales/fluent
 
 USER daemon
 EXPOSE 2747
