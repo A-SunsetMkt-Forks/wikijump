@@ -1,7 +1,7 @@
 services:
   database:
     build:
-      context: ../../..
+      context: ../..
       dockerfile: install/local/postgres/Dockerfile
     environment:
       - "POSTGRES_DB=wikijump"
@@ -50,7 +50,7 @@ services:
 
   api:
     build:
-      context: ../../..
+      context: ../..
       dockerfile: install/local/api/Dockerfile
     ports:
       - "2747:2747"
@@ -83,7 +83,7 @@ services:
 
   web:
     build:
-      context: ../../..
+      context: ../..
       dockerfile: install/local/web/Dockerfile
     ports:
       - "3000:3000"
@@ -100,7 +100,7 @@ services:
 
   nginx:
     build:
-      context: ../../..
+      context: ../..
       dockerfile: install/local/nginx/Dockerfile
     ports:
       - "80:80"
