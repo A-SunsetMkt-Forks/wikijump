@@ -145,7 +145,10 @@ pub enum Error {
     FileNameEmpty,
 
     #[error("File name too long")]
-    FileNameTooLong,
+    FileNameTooLong { length: usize, maximum: usize },
+
+    #[error("File name contains invalid characters (control chars or slashes)")]
+    FileNameInvalidCharacters,
 
     #[error("File MIME type cannot be empty")]
     FileMimeEmpty,
@@ -381,28 +384,29 @@ impl Error {
             Error::FilterRegexInvalid(_) => 4005,
             Error::FilterNotDeleted => 4006,
             Error::FileNameEmpty => 4007,
-            Error::FileNameTooLong => 4008,
-            Error::FileMimeEmpty => 4009,
-            Error::FileNotDeleted => 4010,
-            Error::PageNotDeleted => 4011,
-            Error::PageSlugEmpty => 4012,
-            Error::SiteSlugEmpty => 4013,
-            Error::UserNameTooShort => 4014,
-            Error::UserSlugEmpty => 4015,
-            Error::UserEmailEmpty => 4022,
-            Error::MessageSubjectEmpty => 4016,
-            Error::MessageSubjectTooLong => 4017,
-            Error::MessageBodyEmpty => 4018,
-            Error::MessageBodyTooLong => 4019,
-            Error::MessageNoRecipients => 4020,
-            Error::MessageTooManyRecipients => 4021,
-            Error::BlobWrongUser => 4022,
-            Error::BlobTooBig => 4023,
-            Error::BlobNotUploaded => 4024,
-            Error::BlobSizeMismatch { .. } => 4025,
-            Error::BlobBlacklisted(_) => 4026,
-            Error::BlobCannotBlacklistExisting => 4027,
-            Error::NotLatestRevisionId => 4028,
+            Error::FileNameTooLong { .. } => 4008,
+            Error::FileNameInvalidCharacters => 4009,
+            Error::FileMimeEmpty => 4010,
+            Error::FileNotDeleted => 4011,
+            Error::PageNotDeleted => 4012,
+            Error::PageSlugEmpty => 4013,
+            Error::SiteSlugEmpty => 4014,
+            Error::UserNameTooShort => 4015,
+            Error::UserSlugEmpty => 4016,
+            Error::UserEmailEmpty => 4017,
+            Error::MessageSubjectEmpty => 4018,
+            Error::MessageSubjectTooLong => 4019,
+            Error::MessageBodyEmpty => 4020,
+            Error::MessageBodyTooLong => 4021,
+            Error::MessageNoRecipients => 4022,
+            Error::MessageTooManyRecipients => 4023,
+            Error::BlobWrongUser => 4024,
+            Error::BlobTooBig => 4025,
+            Error::BlobNotUploaded => 4026,
+            Error::BlobSizeMismatch { .. } => 4027,
+            Error::BlobBlacklisted(_) => 4028,
+            Error::BlobCannotBlacklistExisting => 4029,
+            Error::NotLatestRevisionId => 4030,
 
             // 4100 -- Localization
             Error::LocaleInvalid(_) => 4100,
@@ -455,6 +459,10 @@ impl Error {
             Error::BlobSizeMismatch { expected, actual } => json!({
                 "expected": expected,
                 "actual": actual,
+            }),
+            Error::FileNameTooLong { length, maximum } => json!({
+                "length": length,
+                "maximum": maximum,
             }),
 
             // Emit as-is
