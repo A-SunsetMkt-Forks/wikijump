@@ -76,7 +76,9 @@ impl FileRevisionService {
         debug_assert!(
             matches!(
                 revision_type,
-                FileRevisionType::Regular | FileRevisionType::Move | FileRevisionType::Rollback,
+                FileRevisionType::Regular
+                    | FileRevisionType::Move
+                    | FileRevisionType::Rollback,
             ),
             "Invalid revision type for standard revision creation",
         );
