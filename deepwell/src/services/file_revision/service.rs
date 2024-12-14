@@ -71,11 +71,12 @@ impl FileRevisionService {
         let txn = ctx.transaction();
         let revision_number = next_revision_number(&previous, page_id, file_id);
 
-        // Replace with debug_assert_matches! when stablized
+        // Replace with debug_assert_matches! when stablized.
+        // This should correspond to each use of FileRevisionService::create() in FileService.
         debug_assert!(
             matches!(
                 revision_type,
-                FileRevisionType::Regular | FileRevisionType::Rollback,
+                FileRevisionType::Regular | FileRevisionType::Move | FileRevisionType::Rollback,
             ),
             "Invalid revision type for standard revision creation",
         );
