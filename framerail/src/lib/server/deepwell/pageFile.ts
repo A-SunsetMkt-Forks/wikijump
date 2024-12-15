@@ -163,6 +163,26 @@ export async function pageFileHistory(
   })
 }
 
+export async function pageFileRollback(
+  siteId: number,
+  pageId: Optional<number>,
+  userId: number,
+  fileId: string,
+  lastRevisionId: number,
+  revisionNumber: number,
+  revisionComments: Optional<string>
+): Promise<object> {
+  return client.request("file_rollback", {
+    site_id: siteId,
+    page_id: pageId,
+    user_id: userId,
+    file: fileId,
+    last_revision_id: lastRevisionId,
+    revision_number: revisionNumber,
+    revision_comments: revisionComments
+  })
+}
+
 export async function pageFileRevision(
   siteId: number,
   pageId: Optional<number>,

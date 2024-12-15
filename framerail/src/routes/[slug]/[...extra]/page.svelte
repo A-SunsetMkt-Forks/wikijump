@@ -531,6 +531,33 @@
     }
   }
 
+  async function rollbackFileRevision(revisionNumber: number, comments?: string) {
+    let fdata = new FormData()
+    fdata.set("site-id", $page.data.site.site_id)
+    fdata.set("page-id", $page.data.page.page_id)
+    fdata.set("file-id", fileEditId)
+    fdata.set("revision-number", revisionNumber)
+    fdata.set("last-revision-id", fileMap.get(fileEditId)?.revision_id)
+    if (comments !== undefined) fdata.set("comments", comments)
+    let res = await fetch(`/${$page.data.page.slug}/file-rollback`, {
+      method: "POST",
+      body: fdata
+    }).then((res) => res.json())
+    if (res?.message) {
+      showErrorPopup.set({
+        state: true,
+        message: res.message,
+        data: res.data
+      })
+    } else {
+      getFileList()
+      showFileHistory = false
+      fileRevisionMap = new Map()
+      handleFileHistory(fileEditId)
+      invalidateAll()
+    }
+  }
+
   onMount(() => {
     if ($page.data?.options.history) handleHistory()
   })
@@ -1350,6 +1377,18 @@
         {#each [...fileRevisionMap].sort((a, b) => b[0] - a[0]) as [_, revisionItem] (revisionItem.revision_number)}
           <div class="revision-row" data-id={revisionItem.revision_id}>
             <div class="revision-attribute action">
+              {#if ["create", "regular"].includes(revisionItem.revision_type)}
+                <button
+                  class="action-button revision-rollback clickable"
+                  type="button"
+                  on:click|stopPropagation={() => {
+                    fileEditId = revisionItem.file_id
+                    rollbackFileRevision(revisionItem.revision_number)
+                  }}
+                >
+                  {$page.data.internationalization?.["wiki-page-revision-rollback"]}
+                </button>
+              {/if}
             </div>
             <div class="revision-attribute revision-number">
               {revisionItem.revision_number}

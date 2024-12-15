@@ -247,6 +247,24 @@ export async function POST(event) {
       let limit = limitStr ? parseInt(limitStr) : null
 
       res = await pageFile.pageFileHistory(siteId, pageId, fileId, revisionNumber, limit)
+    } else if (extra.includes("file-rollback")) {
+      let fileIdStr = data.get("file-id")?.toString().trim()
+      let fileId = fileIdStr ? parseInt(fileIdStr) : null
+      let revisionNumberStr = data.get("revision-number")?.toString()
+      let revisionNumber = revisionNumberStr ? parseInt(revisionNumberStr) : null
+      let comments = data.get("comments")?.toString() ?? ""
+      let lastRevIdStr = data.get("last-revision-id")?.toString().trim()
+      let lastRevId = lastRevIdStr ? parseInt(lastRevIdStr) : null
+
+      res = await pageFile.pageFileRollback(
+        siteId,
+        pageId,
+        session?.user_id,
+        fileId,
+        lastRevId,
+        revisionNumber,
+        comments
+      )
     }
 
     return new Response(JSON.stringify(res))
