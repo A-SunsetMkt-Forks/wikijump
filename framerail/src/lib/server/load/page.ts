@@ -123,6 +123,7 @@ export async function loadPage(
       // Page files
       "files": {},
       "upload": {},
+      "restore": {},
       "wiki-page-file-no-files": {},
       "wiki-page-file-select": {},
       "wiki-page-file-name": {},
@@ -135,6 +136,8 @@ export async function loadPage(
       "wiki-page-file.size": {},
       "wiki-page-file.page": {},
       "wiki-page-file-move-destination-page": {},
+      "wiki-page-file-restore.new-page": {},
+      "wiki-page-file-restore.new-name": {},
 
       // Misc
       "wiki-page-move-new-slug": {},

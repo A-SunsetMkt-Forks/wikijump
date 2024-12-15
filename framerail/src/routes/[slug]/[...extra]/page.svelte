@@ -19,6 +19,7 @@
   let showFileUploadAction = false
   let showFileEditAction = false
   let showFileMoveAction = false
+  let showFileRestoreAction = false
   let moveInputNewSlugElem: HTMLInputElement
   let revisionMap: Map<number, Record<string, any>> = new Map()
   let revision: Record<string, any> = {}
@@ -478,6 +479,29 @@
       showFileMoveAction = false
       showFileHistory = false
       await getFileList()
+    }
+  }
+
+  async function restoreFile() {
+    let form = document.getElementById("file-restore")
+    let fdata = new FormData(form)
+    fdata.set("site-id", $page.data.site.site_id)
+    fdata.set("page-id", $page.data.page.page_id)
+    fdata.set("file-id", fileEditId)
+    let res = await fetch(`/${$page.params.slug}/file-restore`, {
+      method: "POST",
+      body: fdata
+    }).then((res) => res.json())
+    if (res?.message) {
+      showErrorPopup.set({
+        state: true,
+        message: res.message,
+        data: res.data
+      })
+    } else {
+      showFileRestoreAction = false
+      getFileList()
+      invalidateAll()
     }
   }
 
@@ -941,6 +965,18 @@
       >
         {$page.data.internationalization?.upload}
       </button>
+      <button
+        class="action-button deleted-file clickable"
+        type="button"
+        on:click={() => {
+          showFiles = false
+          getFileList(true).then(() => {
+            showFiles = true
+          })
+        }}
+      >
+        {$page.data.internationalization?.restore}
+      </button>
     </div>
 
     {#if fileMap.size > 0}
@@ -989,35 +1025,48 @@
               {file.size}
             </div>
             <div class="file-attribute action">
-              <button
-                class="action-button move-file clickable"
-                type="button"
-                on:click|stopPropagation={() => {
-                  fileEditId = file.file_id
-                  showFileMoveAction = true
-                }}
-              >
-                {$page.data.internationalization?.move}
-              </button>
-              <button
-                class="action-button edit-file clickable"
-                type="button"
-                on:click|stopPropagation={() => {
-                  fileEditId = file.file_id
-                  showFileEditAction = true
-                }}
-              >
-                {$page.data.internationalization?.edit}
-              </button>
-              <button
-                class="action-button delete-file clickable"
-                type="button"
-                on:click|stopPropagation={() => {
-                  deleteFile(file.file_id, file.revision_id)
-                }}
-              >
-                {$page.data.internationalization?.delete}
-              </button>
+              {#if file.revision_type === "delete"}
+                <button
+                  class="action-button restore-file clickable"
+                  type="button"
+                  on:click|stopPropagation={() => {
+                    fileEditId = file.file_id
+                    showFileRestoreAction = true
+                  }}
+                >
+                  {$page.data.internationalization?.restore}
+                </button>
+              {:else}
+                <button
+                  class="action-button move-file clickable"
+                  type="button"
+                  on:click|stopPropagation={() => {
+                    fileEditId = file.file_id
+                    showFileMoveAction = true
+                  }}
+                >
+                  {$page.data.internationalization?.move}
+                </button>
+                <button
+                  class="action-button edit-file clickable"
+                  type="button"
+                  on:click|stopPropagation={() => {
+                    fileEditId = file.file_id
+                    showFileEditAction = true
+                  }}
+                >
+                  {$page.data.internationalization?.edit}
+                </button>
+                <button
+                  class="action-button delete-file clickable"
+                  type="button"
+                  on:click|stopPropagation={() => {
+                    deleteFile(file.file_id, file.revision_id)
+                  }}
+                >
+                  {$page.data.internationalization?.delete}
+                </button>
+              {/if}
             </div>
           </div>
         {/each}
@@ -1179,6 +1228,55 @@
         </div>
       </form>
     {/if}
+
+    {#if showFileRestoreAction}
+      <form
+        id="file-restore"
+        class="file-restore"
+        method="POST"
+        on:submit|preventDefault={restoreFile}
+      >
+        <input
+          name="new-page"
+          class="file-restore-new-page"
+          placeholder={$page.data.internationalization?.[
+            "wiki-page-file-restore.new-page"
+          ]}
+          type="text"
+        />
+        <input
+          name="new-name"
+          class="file-restore-new-name"
+          placeholder={$page.data.internationalization?.[
+            "wiki-page-file-restore.new-name"
+          ]}
+          type="text"
+        />
+        <textarea
+          name="comments"
+          class="file-restore-comments"
+          placeholder={$page.data.internationalization?.["wiki-page-revision-comments"]}
+        />
+        <div class="action-row file-restore-actions">
+          <button
+            class="action-button file-restore-button button-cancel clickable"
+            type="button"
+            on:click|stopPropagation={() => {
+              showFileRestoreAction = false
+            }}
+          >
+            {$page.data.internationalization?.cancel}
+          </button>
+          <button
+            class="action-button file-restore-button button-restore clickable"
+            type="submit"
+            on:click|stopPropagation
+          >
+            {$page.data.internationalization?.restore}
+          </button>
+        </div>
+      </form>
+    {/if}
   </div>
 {/if}
 
@@ -1219,7 +1317,8 @@
   .page-parent,
   .file-upload,
   .file-edit,
-  .file-move {
+  .file-move,
+  .file-restore {
     display: flex;
     flex-direction: column;
     gap: 15px;

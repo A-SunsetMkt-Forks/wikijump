@@ -219,6 +219,24 @@ export async function POST(event) {
         name,
         comments
       )
+    } else if (extra.includes("file-restore")) {
+      let fileIdStr = data.get("file-id")?.toString().trim()
+      let fileId = fileIdStr ? parseInt(fileIdStr) : null
+      let newPage = data.get("new-page")?.toString().trim()
+      let newName = data.get("new-name")?.toString().trim()
+      if (newPage === "") newPage = undefined
+      if (newName === "") newName = undefined
+      let comments = data.get("comments")?.toString() ?? ""
+
+      res = await pageFile.pageFileRestore(
+        siteId,
+        pageId,
+        session?.user_id,
+        fileId,
+        newPage,
+        newName,
+        comments
+      )
     }
 
     return new Response(JSON.stringify(res))

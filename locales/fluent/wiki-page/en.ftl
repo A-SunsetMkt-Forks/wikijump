@@ -73,6 +73,10 @@ wiki-page-file =
   .size = File size
   .page = Page
 
+wiki-page-file-restore = Restore
+  .new-page = Destination page
+  .new-name = New file name
+
 ### Special Page fallback strings
 
 wiki-page-missing = The page //{ $slug }// you want to access does not exist.

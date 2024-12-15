@@ -108,3 +108,23 @@ export async function pageFileMove(
     revision_comments: revisionComments
   })
 }
+
+export async function pageFileRestore(
+  siteId: number,
+  pageId: number,
+  userId: number,
+  fileId: string,
+  newPage: Optional<string | number>,
+  newName: Optional<string>,
+  revisionComments: Optional<string>
+): Promise<object> {
+  return client.request("file_restore", {
+    site_id: siteId,
+    page_id: pageId,
+    user_id: userId,
+    file_id: fileId,
+    new_page: newPage,
+    new_name: newName,
+    revision_comments: revisionComments
+  })
+}
