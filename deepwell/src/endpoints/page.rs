@@ -19,7 +19,9 @@
  */
 
 use super::prelude::*;
+use crate::models::file::Model as FileModel;
 use crate::models::page::Model as PageModel;
+use crate::services::file::{GetFileOutput, GetPageFiles};
 use crate::services::page::{
     CreatePage, CreatePageOutput, DeletePage, DeletePageOutput, EditPage, EditPageOutput,
     GetDeletedPageOutput, GetPageAnyDetails, GetPageDirect, GetPageOutput,
@@ -27,7 +29,7 @@ use crate::services::page::{
     MovePageOutput, RestorePage, RestorePageOutput, RollbackPage, SetPageLayout,
 };
 use crate::services::{Result, TextService};
-use crate::types::{PageDetails, Reference};
+use crate::types::{FileOrder, PageDetails, Reference};
 use futures::future::try_join_all;
 
 pub async fn page_create(
@@ -108,6 +110,37 @@ pub async fn page_get_score(
     let page_id = PageService::get_id(ctx, site_id, reference).await?;
     let score = ScoreService::score(ctx, page_id).await?;
     Ok(GetPageScoreOutput { page_id, score })
+}
+
+pub async fn page_get_files(
+    ctx: &ServiceContext<'_>,
+    params: Params<'static>,
+) -> Result<Vec<GetFileOutput>> {
+    let GetPageFiles {
+        page_id,
+        site_id,
+        deleted,
+    } = params.parse()?;
+
+    info!("Getting files for page ID {page_id} in site ID {site_id}");
+    let get_page_files = FileService::get_all(
+        ctx,
+        site_id,
+        page_id,
+        deleted.to_option().copied(),
+        FileOrder::default(),
+    )
+    .await?
+    .into_iter()
+    .map(|file| build_page_file_output(ctx, file));
+
+    let result = try_join_all(get_page_files)
+        .await?
+        .into_iter()
+        .flatten()
+        .collect();
+
+    Ok(result)
 }
 
 pub async fn page_edit(
@@ -284,5 +317,36 @@ async fn build_page_deleted_output(
         slug: revision.slug,
         tags: revision.tags,
         rating,
+    }))
+}
+
+async fn build_page_file_output(
+    ctx: &ServiceContext<'_>,
+    file: FileModel,
+) -> Result<Option<GetFileOutput>> {
+    // Get file revision
+    let revision =
+        FileRevisionService::get_latest(ctx, file.site_id, file.page_id, file.file_id)
+            .await?;
+
+    // Build result struct
+    Ok(Some(GetFileOutput {
+        file_id: file.file_id,
+        file_created_at: file.created_at,
+        file_updated_at: file.updated_at,
+        file_deleted_at: file.deleted_at,
+        page_id: file.page_id,
+        revision_id: revision.revision_id,
+        revision_type: revision.revision_type,
+        revision_created_at: revision.created_at,
+        revision_number: revision.revision_number,
+        revision_user_id: revision.user_id,
+        name: file.name,
+        data: None,
+        mime: revision.mime_hint,
+        size: revision.size_hint,
+        licensing: revision.licensing,
+        revision_comments: revision.comments,
+        hidden_fields: revision.hidden,
     }))
 }

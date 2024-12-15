@@ -95,6 +95,13 @@ pub struct GetFileOutput {
 }
 
 #[derive(Deserialize, Debug, Clone)]
+pub struct GetPageFiles {
+    pub site_id: i64,
+    pub page_id: i64,
+    pub deleted: Maybe<bool>,
+}
+
+#[derive(Deserialize, Debug, Clone)]
 pub struct EditFile {
     pub site_id: i64,
     pub page_id: i64,
