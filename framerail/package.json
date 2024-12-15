@@ -1,8 +1,11 @@
 {
   "name": "framerail",
   "version": "2024.9.14",
+  "description": "Framerail - Wikijump frontend service",
   "type": "module",
   "private": true,
+  "repository": "https://github.com/scpwiki/wikijump/tree/develop/framerail",
+  "license": "AGPL-3.0-or-later",
   "scripts": {
     "dev": "vite dev",
     "build": "vite build",
