@@ -27,7 +27,9 @@ wiki-page-revision-type = Type
   .regular = Edit
   .move = Move
   .delete = Delete
+  .rollback = Rollback
   .undelete = Restore
+  .undo = Undo
 
 ### Wiki Page Vote
 
@@ -51,6 +53,40 @@ wiki-page-layout =
 wiki-page-restore = Select page to restore
 
 wiki-page-deleted = Deleted at { $datetime }
+
+### Wiki Page Files
+
+wiki-page-file-no-files = No files for this page.
+
+wiki-page-file-select = Select file:
+
+wiki-page-file-name = File name:
+
+wiki-page-file-license = File license:
+
+wiki-page-file-move-destination-page = Destination page
+
+wiki-page-file =
+  .name = File name
+  .created-at = Created at
+  .updated-at = Updated at
+  .license = License
+  .mime = File type
+  .size = File size
+  .page = Page
+
+wiki-page-file-revision-type = Type
+  .create = Create
+  .regular = Edit
+  .move = Move
+  .delete = Delete
+  .rollback = Revert
+  .undelete = Restore
+  .undo = Undo
+
+wiki-page-file-restore = Restore
+  .new-page = Destination page
+  .new-name = New file name
 
 ### Special Page fallback strings
 

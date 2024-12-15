@@ -131,7 +131,8 @@
   }
 
   .action-row,
-  .revision-attribute.action {
+  .revision-attribute.action,
+  .file-attribute.action {
     .action-button {
       padding: 0.5em 1em;
       color: var(--text);

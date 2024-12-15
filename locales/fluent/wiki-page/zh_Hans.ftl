@@ -27,7 +27,9 @@ wiki-page-revision-type = 类型
   .regular = 编辑
   .move = 移动
   .delete = 删除
+  .rollback = 回滚
   .undelete = 恢复
+  .undo = 撤消
 
 ### 维基页面评分
 
@@ -51,6 +53,40 @@ wiki-page-layout =
 wiki-page-restore = 选择需恢复的页面
 
 wiki-page-deleted = 于{ $datetime }删除
+
+### 维基页面附件
+
+wiki-page-file-no-files = 本页没有上传任何档案。
+
+wiki-page-file-select = 选择档案：
+
+wiki-page-file-name = 档案名：
+
+wiki-page-file-license = 授权协议：
+
+wiki-page-file-move-destination-page = 新页面网址
+
+wiki-page-file =
+  .name = 档案名
+  .created-at = 创建日期
+  .updated-at = 最后编辑日期
+  .license = 授权协议
+  .mime = 档案类型
+  .size = 档案大小
+  .page = 页面
+
+wiki-page-file-revision-type = 类型
+  .create = 创建
+  .regular = 编辑
+  .move = 移动
+  .delete = 删除
+  .rollback = 回滚
+  .undelete = 恢复
+  .undo = 撤消
+
+wiki-page-file-restore = 恢复
+  .new-page = 新页面网址
+  .new-name = 新档案名
 
 ### 特殊页面
 

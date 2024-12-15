@@ -1,5 +1,6 @@
 import { authGetSession } from "$lib/server/auth/getSession"
 import * as page from "$lib/server/deepwell/page"
+import * as pageFile from "$lib/server/deepwell/pageFile"
 
 // Handling of server events from client
 
@@ -139,6 +140,131 @@ export async function POST(event) {
       res = await page.pageRestore(siteId, pageId, session?.user_id, comments)
     } else if (extra.includes("score")) {
       res = await page.pageScore(siteId, pageId, slug)
+    } else if (extra.includes("file-list")) {
+      let deleted = data.get("deleted")?.toString() ?? false
+
+      res = await pageFile.pageFileList(
+        siteId,
+        pageId,
+        !["false", "null", "", false].includes(deleted)
+      )
+    } else if (extra.includes("file-upload")) {
+      let file = data.get("file")?.valueOf()
+      let name = data.get("name")?.toString().trim()
+      if (name === "") name = undefined // use default file name
+      let comments = data.get("comments")?.toString() ?? ""
+
+      res = await pageFile.pageFileCreate(
+        siteId,
+        pageId,
+        session?.user_id,
+        name,
+        file,
+        null,
+        comments
+      )
+    } else if (extra.includes("file-delete")) {
+      let fileIdStr = data.get("file-id")?.toString().trim()
+      let fileId = fileIdStr ? parseInt(fileIdStr) : null
+      let lastRevIdStr = data.get("last-revision-id")?.toString().trim()
+      let lastRevId = lastRevIdStr ? parseInt(lastRevIdStr) : null
+      let comments = data.get("comments")?.toString() ?? ""
+
+      res = await pageFile.pageFileDelete(
+        siteId,
+        pageId,
+        session?.user_id,
+        fileId,
+        lastRevId,
+        comments
+      )
+    } else if (extra.includes("file-edit")) {
+      let fileIdStr = data.get("file-id")?.toString().trim()
+      let fileId = fileIdStr ? parseInt(fileIdStr) : null
+      let lastRevIdStr = data.get("last-revision-id")?.toString().trim()
+      let lastRevId = lastRevIdStr ? parseInt(lastRevIdStr) : null
+      let file = data.get("file")?.valueOf()
+      let name = data.get("name")?.toString().trim()
+      if (name === "") name = undefined
+      let comments = data.get("comments")?.toString() ?? ""
+
+      res = await pageFile.pageFileEdit(
+        siteId,
+        pageId,
+        session?.user_id,
+        fileId,
+        name,
+        file,
+        null,
+        lastRevId,
+        comments
+      )
+    } else if (extra.includes("file-move")) {
+      let fileIdStr = data.get("file-id")?.toString().trim()
+      let fileId = fileIdStr ? parseInt(fileIdStr) : null
+      let lastRevIdStr = data.get("last-revision-id")?.toString().trim()
+      let lastRevId = lastRevIdStr ? parseInt(lastRevIdStr) : null
+      let destinationPage = data.get("destination-page")?.toString()
+      let name = data.get("name")?.toString().trim()
+      if (name === "") name = undefined
+      let comments = data.get("comments")?.toString() ?? ""
+
+      res = await pageFile.pageFileMove(
+        siteId,
+        pageId,
+        destinationPage,
+        session?.user_id,
+        fileId,
+        lastRevId,
+        name,
+        comments
+      )
+    } else if (extra.includes("file-restore")) {
+      let fileIdStr = data.get("file-id")?.toString().trim()
+      let fileId = fileIdStr ? parseInt(fileIdStr) : null
+      let newPage = data.get("new-page")?.toString().trim()
+      let newName = data.get("new-name")?.toString().trim()
+      if (newPage === "") newPage = undefined
+      if (newName === "") newName = undefined
+      let comments = data.get("comments")?.toString() ?? ""
+
+      res = await pageFile.pageFileRestore(
+        siteId,
+        pageId,
+        session?.user_id,
+        fileId,
+        newPage,
+        newName,
+        comments
+      )
+    } else if (extra.includes("file-history")) {
+      /** Retrieve file revision list. */
+      let fileIdStr = data.get("file-id")?.toString().trim()
+      let fileId = fileIdStr ? parseInt(fileIdStr) : null
+      let revisionNumberStr = data.get("revision-number")?.toString()
+      let revisionNumber = revisionNumberStr ? parseInt(revisionNumberStr) : null
+      let limitStr = data.get("limit")?.toString()
+      let limit = limitStr ? parseInt(limitStr) : null
+
+      res = await pageFile.pageFileHistory(siteId, pageId, fileId, revisionNumber, limit)
+    } else if (extra.includes("file-rollback")) {
+      let fileIdStr = data.get("file-id")?.toString().trim()
+      let fileId = fileIdStr ? parseInt(fileIdStr) : null
+      let revisionNumberStr = data.get("revision-number")?.toString()
+      let revisionNumber = revisionNumberStr ? parseInt(revisionNumberStr) : null
+      let comments = data.get("comments")?.toString() ?? ""
+      let lastRevIdStr = data.get("last-revision-id")?.toString().trim()
+      let lastRevId = lastRevIdStr ? parseInt(lastRevIdStr) : null
+
+      res = await pageFile.pageFileRollback(
+        siteId,
+        pageId,
+        session?.user_id,
+        fileId,
+        lastRevId,
+        revisionNumber,
+        comments
+      )
     }
 
     return new Response(JSON.stringify(res))
