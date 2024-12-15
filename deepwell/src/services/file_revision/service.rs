@@ -71,11 +71,14 @@ impl FileRevisionService {
         let txn = ctx.transaction();
         let revision_number = next_revision_number(&previous, page_id, file_id);
 
-        // Replace with debug_assert_matches! when stablized
+        // Replace with debug_assert_matches! when stablized.
+        // This should correspond to each use of FileRevisionService::create() in FileService.
         debug_assert!(
             matches!(
                 revision_type,
-                FileRevisionType::Regular | FileRevisionType::Rollback,
+                FileRevisionType::Regular
+                    | FileRevisionType::Move
+                    | FileRevisionType::Rollback,
             ),
             "Invalid revision type for standard revision creation",
         );
@@ -541,7 +544,6 @@ impl FileRevisionService {
     pub async fn get_range(
         ctx: &ServiceContext<'_>,
         GetFileRevisionRange {
-            page_id,
             file_id,
             revision_number,
             revision_direction,
@@ -570,7 +572,6 @@ impl FileRevisionService {
         let revisions = FileRevision::find()
             .filter(
                 Condition::all()
-                    .add(file_revision::Column::PageId.eq(page_id))
                     .add(file_revision::Column::FileId.eq(file_id))
                     .add(revision_condition),
             )
