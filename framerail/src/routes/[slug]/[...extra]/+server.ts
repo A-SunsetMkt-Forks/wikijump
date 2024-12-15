@@ -163,6 +163,21 @@ export async function POST(event) {
         null,
         comments
       )
+    } else if (extra.includes("file-delete")) {
+      let fileIdStr = data.get("file-id")?.toString().trim()
+      let fileId = fileIdStr ? parseInt(fileIdStr) : null
+      let lastRevIdStr = data.get("last-revision-id")?.toString().trim()
+      let lastRevId = lastRevIdStr ? parseInt(lastRevIdStr) : null
+      let comments = data.get("comments")?.toString() ?? ""
+
+      res = await pageFile.pageFileDelete(
+        siteId,
+        pageId,
+        session?.user_id,
+        fileId,
+        lastRevId,
+        comments
+      )
     }
 
     return new Response(JSON.stringify(res))

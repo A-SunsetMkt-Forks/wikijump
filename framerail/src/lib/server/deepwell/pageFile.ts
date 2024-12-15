@@ -38,3 +38,20 @@ export async function pageFileCreate(
   })
 }
 
+export async function pageFileDelete(
+  siteId: number,
+  pageId: number,
+  userId: number,
+  fileId: string,
+  lastRevisionId: number,
+  revisionComments: Optional<string>
+) {
+  return await client.request("file_delete", {
+    site_id: siteId,
+    page_id: pageId,
+    user_id: userId,
+    file: fileId,
+    last_revision_id: lastRevisionId,
+    revision_comments: revisionComments
+  })
+}

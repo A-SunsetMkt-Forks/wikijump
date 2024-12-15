@@ -402,6 +402,29 @@
     }
   }
 
+  async function deleteFile(fileId: number, lastRevisionId: number) {
+    let fdata = new FormData()
+    fdata.set("site-id", $page.data.site.site_id)
+    fdata.set("page-id", $page.data.page.page_id)
+    fdata.set("file-id", fileId)
+    fdata.set("last-revision-id", lastRevisionId)
+
+    let res = await fetch(`/${$page.data.page.slug}/file-delete`, {
+      method: "POST",
+      body: fdata
+    }).then((res) => res.json())
+    if (res?.message) {
+      showErrorPopup.set({
+        state: true,
+        message: res.message,
+        data: res.data
+      })
+    } else {
+      showFileHistory = false
+      await getFileList()
+    }
+  }
+
   onMount(() => {
     if ($page.data?.options.history) handleHistory()
   })
@@ -910,6 +933,15 @@
               {file.size}
             </div>
             <div class="file-attribute action">
+              <button
+                class="action-button delete-file clickable"
+                type="button"
+                on:click|stopPropagation={() => {
+                  deleteFile(file.file_id, file.revision_id)
+                }}
+              >
+                {$page.data.internationalization?.delete}
+              </button>
             </div>
           </div>
         {/each}
