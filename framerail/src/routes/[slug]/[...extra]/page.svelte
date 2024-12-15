@@ -1072,7 +1072,7 @@
               {file.licensing}
             </div>
             <div class="file-attribute mime">
-              {file.mime.split(";")[0]}
+              {file.mime}
             </div>
             <div class="file-attribute size">
               {file.size}
@@ -1413,7 +1413,7 @@
               {revisionItem.name}
             </div>
             <div class="revision-attribute mime">
-              {revisionItem.mime_hint.split(";")[0]}
+              {revisionItem.mime_hint}
             </div>
             <div class="revision-attribute size">
               {revisionItem.size_hint}
