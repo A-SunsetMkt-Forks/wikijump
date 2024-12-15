@@ -1263,7 +1263,9 @@
         <input
           name="destination-page"
           class="file-move-destination-page"
-          placeholder={$page.data.internationalization?.["wiki-page-file-move-destination-page"]}
+          placeholder={$page.data.internationalization?.[
+            "wiki-page-file-move-destination-page"
+          ]}
           type="text"
         />
         <textarea
