@@ -148,6 +148,21 @@ export async function POST(event) {
         pageId,
         !["false", "null", "", false].includes(deleted)
       )
+    } else if (extra.includes("file-upload")) {
+      let file = data.get("file")?.valueOf()
+      let name = data.get("name")?.toString().trim()
+      if (name === "") name = undefined // use default file name
+      let comments = data.get("comments")?.toString() ?? ""
+
+      res = await pageFile.pageFileCreate(
+        siteId,
+        pageId,
+        session?.user_id,
+        name,
+        file,
+        null,
+        comments
+      )
     }
 
     return new Response(JSON.stringify(res))

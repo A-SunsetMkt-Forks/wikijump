@@ -15,3 +15,26 @@ export async function pageFileList(
   })
 }
 
+export async function pageFileCreate(
+  siteId: number,
+  pageId: number,
+  userId: number,
+  name: Optional<string>,
+  file: File,
+  licensing: any,
+  revisionComments: Optional<string>
+) {
+  let presign = await startBlobUpload(userId, file.size)
+  await uploadToPresignUrl(presign.presign_url, file)
+
+  return await client.request("file_create", {
+    site_id: siteId,
+    page_id: pageId,
+    user_id: userId,
+    name: name ?? file.name,
+    licensing,
+    uploaded_blob_id: presign.pending_blob_id,
+    revision_comments: revisionComments
+  })
+}
+

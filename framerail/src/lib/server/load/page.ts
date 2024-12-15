@@ -122,7 +122,11 @@ export async function loadPage(
 
       // Page files
       "files": {},
+      "upload": {},
       "wiki-page-file-no-files": {},
+      "wiki-page-file-select": {},
+      "wiki-page-file-name": {},
+      "wiki-page-file-license": {},
       "wiki-page-file.name": {},
       "wiki-page-file.created-at": {},
       "wiki-page-file.updated-at": {},

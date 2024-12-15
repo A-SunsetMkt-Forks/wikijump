@@ -16,6 +16,7 @@
   let showVote = false
   let showVoteList = false
   let showFiles = false
+  let showFileUploadAction = false
   let moveInputNewSlugElem: HTMLInputElement
   let revisionMap: Map<number, Record<string, any>> = new Map()
   let revision: Record<string, any> = {}
@@ -23,6 +24,7 @@
   let voteRating: number
   let parents = ""
   let fileMap: Map<number, Record<string, any>> = new Map()
+  let filesUpload: FileList
 
   async function handleDelete() {
     let fdata = new FormData()
@@ -374,6 +376,29 @@
       res.forEach((file) => {
         fileMap.set(file.file_id, file)
       })
+    }
+  }
+
+  async function uploadFile() {
+    let form = document.getElementById("file-upload")
+    let fdata = new FormData(form)
+    fdata.set("site-id", $page.data.site.site_id)
+    fdata.set("page-id", $page.data.page.page_id)
+
+    let res = await fetch(`/${$page.data.page.slug}/file-upload`, {
+      method: "POST",
+      body: fdata
+    }).then((res) => res.json())
+    if (res?.message) {
+      showErrorPopup.set({
+        state: true,
+        message: res.message,
+        data: res.data
+      })
+    } else {
+      filesUpload = null
+      showFileUploadAction = false
+      await getFileList()
     }
   }
 
@@ -828,6 +853,15 @@
 {#if showFiles}
   <div class="file-panel">
     <div class="action-row file-action">
+      <button
+        class="action-button upload-file clickable"
+        type="button"
+        on:click|stopPropagation={() => {
+          showFileUploadAction = true
+        }}
+      >
+        {$page.data.internationalization?.upload}
+      </button>
     </div>
 
     {#if fileMap.size > 0}
@@ -887,6 +921,62 @@
         </div>
       </div>
     {/if}
+
+    {#if showFileUploadAction}
+      <form
+        id="file-upload"
+        class="file-upload"
+        method="POST"
+        on:submit|preventDefault={uploadFile}
+      >
+        <div class="file-form-field">
+          <label for="file"
+            >{$page.data.internationalization?.["wiki-page-file-select"]}</label
+          >
+          <input
+            name="file"
+            class="file-attribute file"
+            type="file"
+            bind:files={filesUpload}
+          />
+        </div>
+        <div class="file-form-field">
+          <label for="name"
+            >{$page.data.internationalization?.["wiki-page-file-name"]}</label
+          >
+          <input
+            name="name"
+            class="file-attribute name"
+            placeholder={filesUpload?.[0]?.name}
+            type="text"
+          />
+        </div>
+        <textarea
+          name="comments"
+          class="file-form-field file-comments"
+          placeholder={$page.data.internationalization?.["wiki-page-revision-comments"]}
+        />
+        <div class="action-row file-upload-actions">
+          <button
+            class="action-button file-upload-button button-cancel clickable"
+            type="button"
+            on:click|stopPropagation={() => {
+              filesUpload = null
+              showFileUploadAction = false
+            }}
+          >
+            {$page.data.internationalization?.cancel}
+          </button>
+          <button
+            class="action-button file-upload-button button-upload clickable"
+            type="submit"
+            on:click|stopPropagation
+          >
+            {$page.data.internationalization?.upload}
+          </button>
+        </div>
+      </form>
+    {/if}
   </div>
 {/if}
 
@@ -924,7 +1014,8 @@
   .editor,
   .page-move,
   .page-layout,
-  .page-parent {
+  .page-parent,
+  .file-upload {
     display: flex;
     flex-direction: column;
     gap: 15px;

@@ -56,6 +56,12 @@ wiki-page-deleted = Deleted at { $datetime }
 
 wiki-page-file-no-files = No files for this page.
 
+wiki-page-file-select = Select file:
+
+wiki-page-file-name = File name:
+
+wiki-page-file-license = File license:
+
 wiki-page-file =
   .name = File name
   .created-at = Created at

@@ -56,6 +56,12 @@ wiki-page-deleted = 于{ $datetime }删除
 
 wiki-page-file-no-files = 本页没有上传任何档案。
 
+wiki-page-file-select = 选择档案：
+
+wiki-page-file-name = 档案名：
+
+wiki-page-file-license = 授权协议：
+
 wiki-page-file =
   .name = 档案名
   .created-at = 创建日期
