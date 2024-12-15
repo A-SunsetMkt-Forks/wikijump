@@ -1,6 +1,6 @@
 {
   "name": "framerail",
-  "version": "2024.9.14",
+  "version": "2024.12.15",
   "description": "Framerail - Wikijump frontend service",
   "type": "module",
   "private": true,
