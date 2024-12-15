@@ -136,7 +136,7 @@ pub struct EditFileBody {
 pub type EditFileOutput = CreateFileRevisionOutput;
 
 #[derive(Deserialize, Debug, Clone)]
-pub struct MoveFile {
+pub struct MoveFile<'a> {
     pub revision_comments: String,
     pub site_id: i64,
     pub file_id: i64,
@@ -144,7 +144,7 @@ pub struct MoveFile {
     pub last_revision_id: i64,
     pub name: Option<String>,
     pub current_page_id: i64,
-    pub destination_page_id: i64,
+    pub destination_page: Reference<'a>,
 }
 
 pub type MoveFileOutput = CreateFileRevisionOutput;
@@ -167,9 +167,9 @@ pub struct DeleteFileOutput {
 }
 
 #[derive(Deserialize, Debug, Clone)]
-pub struct RestoreFile {
+pub struct RestoreFile<'a> {
     pub revision_comments: String,
-    pub new_page_id: Option<i64>,
+    pub new_page: Option<Reference<'a>>,
     pub new_name: Option<String>,
     pub site_id: i64,
     pub page_id: i64,

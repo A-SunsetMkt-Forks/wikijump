@@ -32,7 +32,7 @@ use crate::services::file_revision::{
     GetFileRevision,
 };
 use crate::services::filter::{FilterClass, FilterType};
-use crate::services::{BlobService, FileRevisionService, FilterService};
+use crate::services::{BlobService, FileRevisionService, FilterService, PageService};
 use crate::types::FileOrder;
 use crate::utils::regex_replace_in_place;
 use once_cell::sync::Lazy;
@@ -248,12 +248,12 @@ impl FileService {
             name,
             site_id,
             current_page_id,
-            destination_page_id,
+            destination_page,
             file_id,
             user_id,
             last_revision_id,
             revision_comments,
-        }: MoveFile,
+        }: MoveFile<'_>,
     ) -> Result<Option<MoveFileOutput>> {
         let txn = ctx.transaction();
         let last_revision =
@@ -261,6 +261,10 @@ impl FileService {
                 .await?;
 
         check_last_revision(&last_revision, last_revision_id)?;
+
+        // Get destination page id
+        let destination_page_id =
+            PageService::get_id(ctx, site_id, destination_page).await?;
 
         // Get destination filename
         let mut name = name.unwrap_or_else(|| last_revision.name.clone());
@@ -402,18 +406,20 @@ impl FileService {
     pub async fn restore(
         ctx: &ServiceContext<'_>,
         RestoreFile {
-            new_page_id,
+            new_page,
             new_name,
             site_id,
             page_id,
             file_id,
             user_id,
             revision_comments,
-        }: RestoreFile,
+        }: RestoreFile<'_>,
     ) -> Result<RestoreFileOutput> {
         let txn = ctx.transaction();
         let file = Self::get_direct(ctx, file_id, true).await?;
-        let new_page_id = new_page_id.unwrap_or(page_id);
+        let new_page_id =
+            PageService::get_id(ctx, site_id, new_page.unwrap_or(Reference::Id(page_id)))
+                .await?;
         let new_name = new_name.unwrap_or(file.name);
 
         // Do page checks:
