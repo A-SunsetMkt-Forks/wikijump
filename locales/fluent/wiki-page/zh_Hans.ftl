@@ -52,6 +52,19 @@ wiki-page-restore = 选择需恢复的页面
 
 wiki-page-deleted = 于{ $datetime }删除
 
+### 维基页面附件
+
+wiki-page-file-no-files = 本页没有上传任何档案。
+
+wiki-page-file =
+  .name = 档案名
+  .created-at = 创建日期
+  .updated-at = 最后编辑日期
+  .license = 授权协议
+  .mime = 档案类型
+  .size = 档案大小
+  .page = 页面
+
 ### 特殊页面
 
 wiki-page-missing = 你访问的页面 //{ $slug }// 并不存在。

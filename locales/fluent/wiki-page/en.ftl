@@ -52,6 +52,19 @@ wiki-page-restore = Select page to restore
 
 wiki-page-deleted = Deleted at { $datetime }
 
+### Wiki Page Files
+
+wiki-page-file-no-files = No files for this page.
+
+wiki-page-file =
+  .name = File name
+  .created-at = Created at
+  .updated-at = Updated at
+  .license = License
+  .mime = File type
+  .size = File size
+  .page = Page
+
 ### Special Page fallback strings
 
 wiki-page-missing = The page //{ $slug }// you want to access does not exist.

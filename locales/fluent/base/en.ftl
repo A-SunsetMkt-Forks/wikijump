@@ -38,6 +38,7 @@ download = Download
 edit = Edit
 editor = Editor
 error = Error
+files = Files
 footer = Page Footer
 general = General
 header = Page Header

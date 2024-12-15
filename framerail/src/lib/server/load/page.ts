@@ -120,6 +120,17 @@ export async function loadPage(
       "wiki-page-vote-remove": {},
       "wiki-page-vote-score": {},
 
+      // Page files
+      "files": {},
+      "wiki-page-file-no-files": {},
+      "wiki-page-file.name": {},
+      "wiki-page-file.created-at": {},
+      "wiki-page-file.updated-at": {},
+      "wiki-page-file.license": {},
+      "wiki-page-file.mime": {},
+      "wiki-page-file.size": {},
+      "wiki-page-file.page": {},
+
       // Misc
       "wiki-page-move-new-slug": {},
       "wiki-page-no-render": {},

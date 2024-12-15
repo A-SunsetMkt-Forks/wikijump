@@ -37,6 +37,7 @@ download = 下载
 edit = 编辑
 editor = 编辑器
 error = 错误
+files = 附件
 footer = 页脚
 general = 通用
 header = 页眉

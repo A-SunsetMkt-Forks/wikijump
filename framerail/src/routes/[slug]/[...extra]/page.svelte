@@ -15,12 +15,14 @@
   let showRevisionSource = false
   let showVote = false
   let showVoteList = false
+  let showFiles = false
   let moveInputNewSlugElem: HTMLInputElement
   let revisionMap: Map<number, Record<string, any>> = new Map()
   let revision: Record<string, any> = {}
   let voteMap: Map<number, Record<string, any>> = new Map()
   let voteRating: number
   let parents = ""
+  let fileMap: Map<number, Record<string, any>> = new Map()
 
   async function handleDelete() {
     let fdata = new FormData()
@@ -352,6 +354,29 @@
     }
   }
 
+  async function getFileList(deleted?: boolean) {
+    let fdata = new FormData()
+    fdata.set("site-id", $page.data.site.site_id)
+    fdata.set("page-id", $page.data.page.page_id)
+    if (deleted !== undefined) fdata.set("deleted", deleted)
+    let res = await fetch(`/${$page.data.page.slug}/file-list`, {
+      method: "POST",
+      body: fdata
+    }).then((res) => res.json())
+    if (res?.message) {
+      showErrorPopup.set({
+        state: true,
+        message: res.message,
+        data: res.data
+      })
+    } else {
+      fileMap = new Map()
+      res.forEach((file) => {
+        fileMap.set(file.file_id, file)
+      })
+    }
+  }
+
   onMount(() => {
     if ($page.data?.options.history) handleHistory()
   })
@@ -516,6 +541,17 @@
       on:click={handleVote}
     >
       {$page.data.internationalization?.vote}
+    </button>
+    <button
+      class="action-button button-files clickable"
+      type="button"
+      on:click={() => {
+        getFileList().then(() => {
+          showFiles = true
+        })
+      }}
+    >
+      {$page.data.internationalization?.files}
     </button>
   </div>
 {/if}
@@ -789,6 +825,71 @@
   </div>
 {/if}
 
+{#if showFiles}
+  <div class="file-panel">
+    <div class="action-row file-action">
+    </div>
+
+    {#if fileMap.size > 0}
+      <div class="file-list">
+        <div class="file-list-header">
+          <div class="file-attribute name">
+            {$page.data.internationalization?.["wiki-page-file.name"]}
+          </div>
+          <div class="file-attribute created-at">
+            {$page.data.internationalization?.["wiki-page-file.created-at"]}
+          </div>
+          <div class="file-attribute updated-at">
+            {$page.data.internationalization?.["wiki-page-file.updated-at"]}
+          </div>
+          <div class="file-attribute licensing">
+            {$page.data.internationalization?.["wiki-page-file.license"]}
+          </div>
+          <div class="file-attribute mime">
+            {$page.data.internationalization?.["wiki-page-file.mime"]}
+          </div>
+          <div class="file-attribute size">
+            {$page.data.internationalization?.["wiki-page-file.size"]}
+          </div>
+          <div class="file-attribute action" />
+        </div>
+        {#each [...fileMap].sort((a, b) => b[0] - a[0]) as [_, file] (file.file_id)}
+          <div class="file-row" data-id={file.file_id}>
+            <div class="file-attribute name">
+              {file.name}
+            </div>
+            <div class="file-attribute created-at">
+              {new Date(file.file_created_at).toLocaleString()}
+            </div>
+            <div class="file-attribute updated-at">
+              {file.file_updated_at
+                ? new Date(file.file_updated_at).toLocaleString()
+                : ""}
+            </div>
+            <div class="file-attribute licensing">
+              {file.licensing}
+            </div>
+            <div class="file-attribute mime">
+              {file.mime.split(";")[0]}
+            </div>
+            <div class="file-attribute size">
+              {file.size}
+            </div>
+            <div class="file-attribute action">
+            </div>
+          </div>
+        {/each}
+      </div>
+    {:else}
+      <div class="file-list">
+        <div class="file-list-message">
+          {$page.data.internationalization?.["wiki-page-file-no-files"]}
+        </div>
+      </div>
+    {/if}
+  </div>
+{/if}
+
 <style global lang="scss">
   .debug {
     width: 80vw;
@@ -860,6 +961,20 @@
       display: table-row;
 
       .revision-attribute {
+        display: table-cell;
+      }
+    }
+  }
+
+  .file-list {
+    display: table;
+    width: 100%;
+
+    .file-list-header,
+    .file-row {
+      display: table-row;
+
+      .file-attribute {
         display: table-cell;
       }
     }

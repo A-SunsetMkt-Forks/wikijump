@@ -1,5 +1,6 @@
 import { authGetSession } from "$lib/server/auth/getSession"
 import * as page from "$lib/server/deepwell/page"
+import * as pageFile from "$lib/server/deepwell/pageFile"
 
 // Handling of server events from client
 
@@ -139,6 +140,14 @@ export async function POST(event) {
       res = await page.pageRestore(siteId, pageId, session?.user_id, comments)
     } else if (extra.includes("score")) {
       res = await page.pageScore(siteId, pageId, slug)
+    } else if (extra.includes("file-list")) {
+      let deleted = data.get("deleted")?.toString() ?? false
+
+      res = await pageFile.pageFileList(
+        siteId,
+        pageId,
+        !["false", "null", "", false].includes(deleted)
+      )
     }
 
     return new Response(JSON.stringify(res))
