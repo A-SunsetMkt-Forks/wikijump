@@ -15,6 +15,23 @@ export async function pageFileList(
   })
 }
 
+export async function pageFileGet(
+  siteId: number,
+  pageId: number,
+  userId: number,
+  fileId: number,
+  /** Also request the contents of the file */
+  data: boolean
+) {
+  return await client.request("file_get", {
+    site_id: siteId,
+    page_id: pageId,
+    user_id: userId,
+    file: fileId,
+    data
+  })
+}
+
 export async function pageFileCreate(
   siteId: number,
   pageId: number,
@@ -126,5 +143,36 @@ export async function pageFileRestore(
     new_page: newPage,
     new_name: newName,
     revision_comments: revisionComments
+  })
+}
+
+export async function pageFileHistory(
+  siteId: number,
+  pageId: Optional<number>,
+  fileId: number,
+  revisionNumber: Optional<number>,
+  limit: Optional<number>
+): Promise<object> {
+  return client.request("file_revision_range", {
+    site_id: siteId,
+    page_id: pageId,
+    file_id: fileId,
+    revision_number: revisionNumber ?? defaults.page.history.revisionNumber,
+    revision_direction: "before",
+    limit: limit ?? defaults.page.history.limit
+  })
+}
+
+export async function pageFileRevision(
+  siteId: number,
+  pageId: Optional<number>,
+  fileId: number,
+  revisionNumber: Optional<number>
+): Promise<object> {
+  return client.request("file_revision_get", {
+    site_id: siteId,
+    page_id: pageId,
+    file_id: fileId,
+    revision_number: revisionNumber ?? defaults.page.history.revisionNumber
   })
 }

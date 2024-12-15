@@ -27,7 +27,9 @@ wiki-page-revision-type = 类型
   .regular = 编辑
   .move = 移动
   .delete = 删除
+  .rollback = 回滚
   .undelete = 恢复
+  .undo = 撤消
 
 ### 维基页面评分
 
@@ -72,6 +74,15 @@ wiki-page-file =
   .mime = 档案类型
   .size = 档案大小
   .page = 页面
+
+wiki-page-file-revision-type = 类型
+  .create = 创建
+  .regular = 编辑
+  .move = 移动
+  .delete = 删除
+  .rollback = 回滚
+  .undelete = 恢复
+  .undo = 撤消
 
 wiki-page-file-restore = 恢复
   .new-page = 新页面网址

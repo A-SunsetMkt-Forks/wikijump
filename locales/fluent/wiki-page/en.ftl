@@ -27,7 +27,9 @@ wiki-page-revision-type = Type
   .regular = Edit
   .move = Move
   .delete = Delete
+  .rollback = Rollback
   .undelete = Restore
+  .undo = Undo
 
 ### Wiki Page Vote
 
@@ -72,6 +74,15 @@ wiki-page-file =
   .mime = File type
   .size = File size
   .page = Page
+
+wiki-page-file-revision-type = Type
+  .create = Create
+  .regular = Edit
+  .move = Move
+  .delete = Delete
+  .rollback = Revert
+  .undelete = Restore
+  .undo = Undo
 
 wiki-page-file-restore = Restore
   .new-page = Destination page

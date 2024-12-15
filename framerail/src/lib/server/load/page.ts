@@ -112,7 +112,9 @@ export async function loadPage(
       "wiki-page-revision-type.regular": {},
       "wiki-page-revision-type.move": {},
       "wiki-page-revision-type.delete": {},
+      "wiki-page-revision-type.rollback": {},
       "wiki-page-revision-type.undelete": {},
+      "wiki-page-revision-type.undo": {},
 
       // Page vote
       "wiki-page-vote-list": {},
@@ -136,6 +138,14 @@ export async function loadPage(
       "wiki-page-file.size": {},
       "wiki-page-file.page": {},
       "wiki-page-file-move-destination-page": {},
+      "wiki-page-file-revision-type": {},
+      "wiki-page-file-revision-type.create": {},
+      "wiki-page-file-revision-type.regular": {},
+      "wiki-page-file-revision-type.move": {},
+      "wiki-page-file-revision-type.delete": {},
+      "wiki-page-file-revision-type.rollback": {},
+      "wiki-page-file-revision-type.undelete": {},
+      "wiki-page-file-revision-type.undo": {},
       "wiki-page-file-restore.new-page": {},
       "wiki-page-file-restore.new-name": {},
 

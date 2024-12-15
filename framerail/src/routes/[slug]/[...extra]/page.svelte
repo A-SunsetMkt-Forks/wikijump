@@ -20,6 +20,7 @@
   let showFileEditAction = false
   let showFileMoveAction = false
   let showFileRestoreAction = false
+  let showFileHistory = false
   let moveInputNewSlugElem: HTMLInputElement
   let revisionMap: Map<number, Record<string, any>> = new Map()
   let revision: Record<string, any> = {}
@@ -30,6 +31,7 @@
   let filesUpload: FileList
   let filesEditElem: HTMLInputElement
   let fileEditId: number | null = null
+  let fileRevisionMap: Map<number, Record<string, any>> = new Map()
 
   async function handleDelete() {
     let fdata = new FormData()
@@ -502,6 +504,30 @@
       showFileRestoreAction = false
       getFileList()
       invalidateAll()
+    }
+  }
+
+  async function handleFileHistory(fileId: number) {
+    let fdata = new FormData()
+    fdata.set("site-id", $page.data.site.site_id)
+    fdata.set("page-id", $page.data.page.page_id)
+    fdata.set("file-id", fileId)
+    let res = await fetch(`/${$page.data.page.slug}/file-history`, {
+      method: "POST",
+      body: fdata
+    }).then((res) => res.json())
+    if (res?.message) {
+      showErrorPopup.set({
+        state: true,
+        message: res.message,
+        data: res.data
+      })
+    } else {
+      fileRevisionMap = new Map()
+      res.forEach((rev) => {
+        fileRevisionMap.set(rev.revision_number, rev)
+      })
+      showFileHistory = true
     }
   }
 
@@ -1038,6 +1064,16 @@
                 </button>
               {:else}
                 <button
+                  class="action-button file-history clickable"
+                  type="button"
+                  on:click|stopPropagation={() => {
+                    showFileHistory = false
+                    handleFileHistory(file.file_id)
+                  }}
+                >
+                  {$page.data.internationalization?.history}
+                </button>
+                <button
                   class="action-button move-file clickable"
                   type="button"
                   on:click|stopPropagation={() => {
@@ -1276,6 +1312,77 @@
           </button>
         </div>
       </form>
+    {/if}
+
+    {#if showFileHistory}
+      <div class="revision-list">
+        <div class="revision-header">
+          <div class="revision-attribute action" />
+          <div class="revision-attribute revision-number">
+            {$page.data.internationalization?.["wiki-page-revision-number"]}
+          </div>
+          <div class="revision-attribute revision-type">
+            {$page.data.internationalization?.["wiki-page-file-revision-type"]}
+          </div>
+          <div class="revision-attribute created-at">
+            {$page.data.internationalization?.["wiki-page-file.created-at"]}
+          </div>
+          <div class="revision-attribute user">
+            {$page.data.internationalization?.["wiki-page-revision-user"]}
+          </div>
+          <div class="revision-attribute page">
+            {$page.data.internationalization?.["wiki-page-file.page"]}
+          </div>
+          <div class="revision-attribute name">
+            {$page.data.internationalization?.["wiki-page-file.name"]}
+          </div>
+          <div class="revision-attribute mime">
+            {$page.data.internationalization?.["wiki-page-file.mime"]}
+          </div>
+          <div class="revision-attribute size">
+            {$page.data.internationalization?.["wiki-page-file.size"]}
+          </div>
+          <div class="revision-attribute comments">
+            {$page.data.internationalization?.["wiki-page-revision-comments"]}
+          </div>
+        </div>
+        <!-- Here we sort the list in descending order. -->
+        {#each [...fileRevisionMap].sort((a, b) => b[0] - a[0]) as [_, revisionItem] (revisionItem.revision_number)}
+          <div class="revision-row" data-id={revisionItem.revision_id}>
+            <div class="revision-attribute action">
+            </div>
+            <div class="revision-attribute revision-number">
+              {revisionItem.revision_number}
+            </div>
+            <div class="revision-attribute revision-type">
+              {$page.data.internationalization?.[
+                `wiki-page-file-revision-type.${revisionItem.revision_type}`
+              ]}
+            </div>
+            <div class="revision-attribute created-at">
+              {new Date(revisionItem.created_at).toLocaleString()}
+            </div>
+            <div class="revision-attribute user">
+              {revisionItem.user_id}
+            </div>
+            <div class="revision-attribute page">
+              {revisionItem.page_id}
+            </div>
+            <div class="revision-attribute name">
+              {revisionItem.name}
+            </div>
+            <div class="revision-attribute mime">
+              {revisionItem.mime_hint.split(";")[0]}
+            </div>
+            <div class="revision-attribute size">
+              {revisionItem.size_hint}
+            </div>
+            <div class="revision-attribute comments">
+              {revisionItem.comments}
+            </div>
+          </div>
+        {/each}
+      </div>
     {/if}
   </div>
 {/if}

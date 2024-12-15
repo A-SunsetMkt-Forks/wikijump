@@ -237,6 +237,16 @@ export async function POST(event) {
         newName,
         comments
       )
+    } else if (extra.includes("file-history")) {
+      /** Retrieve file revision list. */
+      let fileIdStr = data.get("file-id")?.toString().trim()
+      let fileId = fileIdStr ? parseInt(fileIdStr) : null
+      let revisionNumberStr = data.get("revision-number")?.toString()
+      let revisionNumber = revisionNumberStr ? parseInt(revisionNumberStr) : null
+      let limitStr = data.get("limit")?.toString()
+      let limit = limitStr ? parseInt(limitStr) : null
+
+      res = await pageFile.pageFileHistory(siteId, pageId, fileId, revisionNumber, limit)
     }
 
     return new Response(JSON.stringify(res))
