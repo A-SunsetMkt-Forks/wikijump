@@ -37,7 +37,8 @@
     </tr>
     <tr class="info-attribute-row">
       <th class="info-attribute-name">UT:Rustc version</th>
-      <td class="info-attribute-value">{$page.data.backend.compile_info.rustc_version}</td>
+      <td class="info-attribute-value">{$page.data.backend.compile_info.rustc_version}</td
+      >
     </tr>
   </tbody>
   <tbody>
