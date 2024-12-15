@@ -178,6 +178,27 @@ export async function POST(event) {
         lastRevId,
         comments
       )
+    } else if (extra.includes("file-edit")) {
+      let fileIdStr = data.get("file-id")?.toString().trim()
+      let fileId = fileIdStr ? parseInt(fileIdStr) : null
+      let lastRevIdStr = data.get("last-revision-id")?.toString().trim()
+      let lastRevId = lastRevIdStr ? parseInt(lastRevIdStr) : null
+      let file = data.get("file")?.valueOf()
+      let name = data.get("name")?.toString().trim()
+      if (name === "") name = undefined
+      let comments = data.get("comments")?.toString() ?? ""
+
+      res = await pageFile.pageFileEdit(
+        siteId,
+        pageId,
+        session?.user_id,
+        fileId,
+        name,
+        file,
+        null,
+        lastRevId,
+        comments
+      )
     }
 
     return new Response(JSON.stringify(res))

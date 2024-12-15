@@ -17,6 +17,7 @@
   let showVoteList = false
   let showFiles = false
   let showFileUploadAction = false
+  let showFileEditAction = false
   let moveInputNewSlugElem: HTMLInputElement
   let revisionMap: Map<number, Record<string, any>> = new Map()
   let revision: Record<string, any> = {}
@@ -25,6 +26,8 @@
   let parents = ""
   let fileMap: Map<number, Record<string, any>> = new Map()
   let filesUpload: FileList
+  let filesEditElem: HTMLInputElement
+  let fileEditId: number | null = null
 
   async function handleDelete() {
     let fdata = new FormData()
@@ -420,6 +423,33 @@
         data: res.data
       })
     } else {
+      showFileHistory = false
+      await getFileList()
+    }
+  }
+
+  async function editFile() {
+    let form = document.getElementById("file-edit")
+    let fdata = new FormData(form)
+    fdata.set("site-id", $page.data.site.site_id)
+    fdata.set("page-id", $page.data.page.page_id)
+    fdata.set("file-id", fileEditId)
+    fdata.set("last-revision-id", fileMap.get(fileEditId)?.revision_id)
+
+    if (!filesEditElem.files?.length) fdata.delete("file")
+
+    let res = await fetch(`/${$page.data.page.slug}/file-edit`, {
+      method: "POST",
+      body: fdata
+    }).then((res) => res.json())
+    if (res?.message) {
+      showErrorPopup.set({
+        state: true,
+        message: res.message,
+        data: res.data
+      })
+    } else {
+      showFileEditAction = false
       showFileHistory = false
       await getFileList()
     }
@@ -934,6 +964,16 @@
             </div>
             <div class="file-attribute action">
               <button
+                class="action-button edit-file clickable"
+                type="button"
+                on:click|stopPropagation={() => {
+                  fileEditId = file.file_id
+                  showFileEditAction = true
+                }}
+              >
+                {$page.data.internationalization?.edit}
+              </button>
+              <button
                 class="action-button delete-file clickable"
                 type="button"
                 on:click|stopPropagation={() => {
@@ -1009,6 +1049,61 @@
         </div>
       </form>
     {/if}
+
+    {#if showFileEditAction}
+      <form
+        id="file-edit"
+        class="file-edit"
+        method="POST"
+        on:submit|preventDefault={editFile}
+      >
+        <div class="file-form-field">
+          <label for="file"
+            >{$page.data.internationalization?.["wiki-page-file-select"]}</label
+          >
+          <input
+            bind:this={filesEditElem}
+            name="file"
+            class="file-attribute file"
+            type="file"
+          />
+        </div>
+        <div class="file-form-field">
+          <label for="name"
+            >{$page.data.internationalization?.["wiki-page-file-name"]}</label
+          >
+          <input
+            name="name"
+            class="file-attribute name"
+            placeholder={fileMap.get(fileEditId)?.name}
+            type="text"
+          />
+        </div>
+        <textarea
+          name="comments"
+          class="file-form-field file-comments"
+          placeholder={$page.data.internationalization?.["wiki-page-revision-comments"]}
+        />
+        <div class="action-row file-edit-actions">
+          <button
+            class="action-button file-edit-button button-cancel clickable"
+            type="button"
+            on:click|stopPropagation={() => {
+              showFileEditAction = false
+            }}
+          >
+            {$page.data.internationalization?.cancel}
+          </button>
+          <button
+            class="action-button file-edit-button button-save clickable"
+            type="submit"
+            on:click|stopPropagation
+          >
+            {$page.data.internationalization?.save}
+          </button>
+        </div>
+      </form>
+    {/if}
   </div>
 {/if}
 
@@ -1047,7 +1142,8 @@
   .page-move,
   .page-layout,
   .page-parent,
-  .file-upload {
+  .file-upload,
+  .file-edit {
     display: flex;
     flex-direction: column;
     gap: 15px;
