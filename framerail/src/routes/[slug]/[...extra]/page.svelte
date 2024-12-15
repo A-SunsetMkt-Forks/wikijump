@@ -18,6 +18,7 @@
   let showFiles = false
   let showFileUploadAction = false
   let showFileEditAction = false
+  let showFileMoveAction = false
   let moveInputNewSlugElem: HTMLInputElement
   let revisionMap: Map<number, Record<string, any>> = new Map()
   let revision: Record<string, any> = {}
@@ -450,6 +451,31 @@
       })
     } else {
       showFileEditAction = false
+      showFileHistory = false
+      await getFileList()
+    }
+  }
+
+  async function moveFile() {
+    let form = document.getElementById("file-move")
+    let fdata = new FormData(form)
+    fdata.set("site-id", $page.data.site.site_id)
+    fdata.set("page-id", $page.data.page.page_id)
+    fdata.set("file-id", fileEditId)
+    fdata.set("last-revision-id", fileMap.get(fileEditId)?.revision_id)
+
+    let res = await fetch(`/${$page.data.page.slug}/file-move`, {
+      method: "POST",
+      body: fdata
+    }).then((res) => res.json())
+    if (res?.message) {
+      showErrorPopup.set({
+        state: true,
+        message: res.message,
+        data: res.data
+      })
+    } else {
+      showFileMoveAction = false
       showFileHistory = false
       await getFileList()
     }
@@ -964,6 +990,16 @@
             </div>
             <div class="file-attribute action">
               <button
+                class="action-button move-file clickable"
+                type="button"
+                on:click|stopPropagation={() => {
+                  fileEditId = file.file_id
+                  showFileMoveAction = true
+                }}
+              >
+                {$page.data.internationalization?.move}
+              </button>
+              <button
                 class="action-button edit-file clickable"
                 type="button"
                 on:click|stopPropagation={() => {
@@ -1104,6 +1140,45 @@
         </div>
       </form>
     {/if}
+
+    {#if showFileMoveAction}
+      <form
+        id="file-move"
+        class="file-move"
+        method="POST"
+        on:submit|preventDefault={moveFile}
+      >
+        <input
+          name="destination-page"
+          class="file-move-destination-page"
+          placeholder={$page.data.internationalization?.["wiki-page-file-move-destination-page"]}
+          type="text"
+        />
+        <textarea
+          name="comments"
+          class="file-move-comments"
+          placeholder={$page.data.internationalization?.["wiki-page-revision-comments"]}
+        />
+        <div class="action-row file-move-actions">
+          <button
+            class="action-button file-move-button button-cancel clickable"
+            type="button"
+            on:click|stopPropagation={() => {
+              showFileMoveAction = false
+            }}
+          >
+            {$page.data.internationalization?.cancel}
+          </button>
+          <button
+            class="action-button file-move-button button-move clickable"
+            type="submit"
+            on:click|stopPropagation
+          >
+            {$page.data.internationalization?.move}
+          </button>
+        </div>
+      </form>
+    {/if}
   </div>
 {/if}
 
@@ -1143,7 +1218,8 @@
   .page-layout,
   .page-parent,
   .file-upload,
-  .file-edit {
+  .file-edit,
+  .file-move {
     display: flex;
     flex-direction: column;
     gap: 15px;

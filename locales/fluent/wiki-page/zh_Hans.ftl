@@ -62,6 +62,8 @@ wiki-page-file-name = 档案名：
 
 wiki-page-file-license = 授权协议：
 
+wiki-page-file-move-destination-page = 新页面网址
+
 wiki-page-file =
   .name = 档案名
   .created-at = 创建日期

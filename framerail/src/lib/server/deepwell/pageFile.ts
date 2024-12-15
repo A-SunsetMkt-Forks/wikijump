@@ -86,3 +86,25 @@ export async function pageFileEdit(
     revision_comments: revisionComments
   })
 }
+
+export async function pageFileMove(
+  siteId: number,
+  currentPageId: number,
+  destinationPage: string | number,
+  userId: number,
+  fileId: string,
+  lastRevisionId: number,
+  name: Optional<string>,
+  revisionComments: Optional<string>
+) {
+  return await client.request("file_move", {
+    site_id: siteId,
+    current_page_id: currentPageId,
+    destination_page: destinationPage,
+    user_id: userId,
+    file_id: fileId,
+    last_revision_id: lastRevisionId,
+    name,
+    revision_comments: revisionComments
+  })
+}

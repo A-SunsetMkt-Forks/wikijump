@@ -134,6 +134,7 @@ export async function loadPage(
       "wiki-page-file.mime": {},
       "wiki-page-file.size": {},
       "wiki-page-file.page": {},
+      "wiki-page-file-move-destination-page": {},
 
       // Misc
       "wiki-page-move-new-slug": {},

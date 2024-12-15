@@ -199,6 +199,26 @@ export async function POST(event) {
         lastRevId,
         comments
       )
+    } else if (extra.includes("file-move")) {
+      let fileIdStr = data.get("file-id")?.toString().trim()
+      let fileId = fileIdStr ? parseInt(fileIdStr) : null
+      let lastRevIdStr = data.get("last-revision-id")?.toString().trim()
+      let lastRevId = lastRevIdStr ? parseInt(lastRevIdStr) : null
+      let destinationPage = data.get("destination-page")?.toString()
+      let name = data.get("name")?.toString().trim()
+      if (name === "") name = undefined
+      let comments = data.get("comments")?.toString() ?? ""
+
+      res = await pageFile.pageFileMove(
+        siteId,
+        pageId,
+        destinationPage,
+        session?.user_id,
+        fileId,
+        lastRevId,
+        name,
+        comments
+      )
     }
 
     return new Response(JSON.stringify(res))
