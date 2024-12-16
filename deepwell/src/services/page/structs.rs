@@ -135,6 +135,8 @@ pub struct GetDeletedPageOutput {
 
     #[serde(with = "time::serde::rfc3339")]
     pub page_created_at: OffsetDateTime,
+
+    #[serde(with = "time::serde::rfc3339::option")]
     pub page_updated_at: Option<OffsetDateTime>,
 
     #[serde(with = "time::serde::rfc3339")]
