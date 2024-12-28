@@ -12,7 +12,7 @@
     fdata.set("site-id", $page.data.site.site_id)
     fdata.set("page-id", $page.data.page.page_id)
     fdata.set("action", "get_list")
-    let res = await fetch(`/${$page.data.page.slug}/vote`, {
+    let res = await fetch(`/${$page.data.page.slug}/vote-get`, {
       method: "POST",
       body: fdata
     }).then((res) => res.json())
@@ -36,7 +36,7 @@
     fdata.set("page-id", $page.data.page.page_id)
     fdata.set("action", "set")
     fdata.set("value", value ?? 0)
-    let res = await fetch(`/${$page.data.page.slug}/vote`, {
+    let res = await fetch(`/${$page.data.page.slug}/vote-cast`, {
       method: "POST",
       body: fdata
     }).then((res) => res.json())
@@ -54,7 +54,7 @@
     fdata.set("site-id", $page.data.site.site_id)
     fdata.set("page-id", $page.data.page.page_id)
     fdata.set("action", "remove")
-    let res = await fetch(`/${$page.data.page.slug}/vote`, {
+    let res = await fetch(`/${$page.data.page.slug}/vote-cancel`, {
       method: "POST",
       body: fdata
     }).then((res) => res.json())
