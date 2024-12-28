@@ -1,3 +1,4 @@
+import { PagePane } from "./types"
 import { useWritable } from "./use-shared-store"
 
 export const useErrorPopup = () =>
@@ -6,3 +7,5 @@ export const useErrorPopup = () =>
     message: null,
     data: null
   })
+
+export const usePagePaneState = () => useWritable<PagePane>("pagePane", PagePane.None)

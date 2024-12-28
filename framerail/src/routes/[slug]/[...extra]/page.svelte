@@ -2,11 +2,12 @@
   import { page } from "$app/stores"
   import { goto, invalidateAll } from "$app/navigation"
   import { onMount } from "svelte"
-  import { useErrorPopup } from "$lib/stores"
-  import { Layout } from "$lib/types"
+  import { useErrorPopup, usePagePaneState } from "$lib/stores"
+  import { Layout, PagePane } from "$lib/types"
+  import { MovePane } from "."
   let showErrorPopup = useErrorPopup()
+  let pagePaneState = usePagePaneState()
 
-  let showMoveAction = false
   let showLayoutAction = false
   let showParentAction = false
   let showHistory = false
@@ -21,7 +22,6 @@
   let showFileMoveAction = false
   let showFileRestoreAction = false
   let showFileHistory = false
-  let moveInputNewSlugElem: HTMLInputElement
   let revisionMap: Map<number, Record<string, any>> = new Map()
   let revision: Record<string, any> = {}
   let voteMap: Map<number, Record<string, any>> = new Map()
@@ -89,37 +89,6 @@
       goto(`/${$page.data.page.slug}`, {
         noScroll: true
       })
-    }
-  }
-
-  async function handleMove() {
-    let form = document.getElementById("page-move")
-    let fdata = new FormData(form)
-    let newSlug = fdata.get("new-slug")
-    if (!newSlug) {
-      moveInputNewSlugElem.classList.add("error")
-      return
-    } else {
-      moveInputNewSlugElem.classList.remove("error")
-    }
-    fdata.set("site-id", $page.data.site.site_id)
-    fdata.set("page-id", $page.data.page.page_id)
-    fdata.set("last-revision-id", $page.data.page_revision.revision_id)
-    let res = await fetch(`/${$page.data.page.slug}/move`, {
-      method: "POST",
-      body: fdata
-    }).then((res) => res.json())
-    if (res?.message) {
-      showErrorPopup.set({
-        state: true,
-        message: res.message,
-        data: res.data
-      })
-    } else {
-      goto(`/${newSlug}`, {
-        noScroll: true
-      })
-      showMoveAction = false
     }
   }
 
@@ -665,7 +634,7 @@
       class="action-button editor-button button-move clickable"
       type="button"
       on:click={() => {
-        showMoveAction = true
+        pagePaneState.set(PagePane.Move)
       }}
     >
       {$page.data.internationalization?.move}
@@ -741,44 +710,8 @@
   <textarea class="page-source" readonly={true}>{$page.data.wikitext}</textarea>
 {/if}
 
-{#if showMoveAction}
-  <form
-    id="page-move"
-    class="page-move"
-    method="POST"
-    on:submit|preventDefault={handleMove}
-  >
-    <input
-      bind:this={moveInputNewSlugElem}
-      name="new-slug"
-      class="page-move-new-slug"
-      placeholder={$page.data.internationalization?.["wiki-page-move-new-slug"]}
-      type="text"
-    />
-    <textarea
-      name="comments"
-      class="page-move-comments"
-      placeholder={$page.data.internationalization?.["wiki-page-revision-comments"]}
-    />
-    <div class="action-row page-move-actions">
-      <button
-        class="action-button page-move-button button-cancel clickable"
-        type="button"
-        on:click|stopPropagation={() => {
-          showMoveAction = false
-        }}
-      >
-        {$page.data.internationalization?.cancel}
-      </button>
-      <button
-        class="action-button page-move-button button-move clickable"
-        type="submit"
-        on:click|stopPropagation
-      >
-        {$page.data.internationalization?.move}
-      </button>
-    </div>
-  </form>
+{#if $pagePaneState === PagePane.Move}
+  <MovePane />
 {/if}
 
 {#if showLayoutAction}
@@ -1438,8 +1371,7 @@
   .page-tags-container,
   .page-meta-info-container,
   .editor-actions,
-  .other-actions,
-  .page-move {
+  .other-actions {
     padding: 0 0 2em;
   }
 
@@ -1460,7 +1392,6 @@
   }
 
   .editor,
-  .page-move,
   .page-layout,
   .page-parent,
   .file-upload,
