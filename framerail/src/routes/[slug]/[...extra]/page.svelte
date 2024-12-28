@@ -3,12 +3,11 @@
   import { goto, invalidateAll } from "$app/navigation"
   import { onMount } from "svelte"
   import { useErrorPopup, usePagePaneState } from "$lib/stores"
-  import { Layout, PagePane } from "$lib/types"
-  import { MovePane } from "."
+  import { PagePane } from "$lib/types"
+  import { LayoutPane, MovePane } from "."
   let showErrorPopup = useErrorPopup()
   let pagePaneState = usePagePaneState()
 
-  let showLayoutAction = false
   let showParentAction = false
   let showHistory = false
   let showSource = false
@@ -89,27 +88,6 @@
       goto(`/${$page.data.page.slug}`, {
         noScroll: true
       })
-    }
-  }
-
-  async function handleLayout() {
-    let form = document.getElementById("page-layout")
-    let fdata = new FormData(form)
-    fdata.set("site-id", $page.data.site.site_id)
-    fdata.set("page-id", $page.data.page.page_id)
-    let res = await fetch(`/${$page.data.page.slug}/layout`, {
-      method: "POST",
-      body: fdata
-    }).then((res) => res.json())
-    if (res?.message) {
-      showErrorPopup.set({
-        state: true,
-        message: res.message,
-        data: res.data
-      })
-    } else {
-      showLayoutAction = false
-      invalidateAll()
     }
   }
 
@@ -643,7 +621,7 @@
       class="action-button editor-button button-layout clickable"
       type="button"
       on:click={() => {
-        showLayoutAction = true
+        pagePaneState.set(PagePane.Layout)
       }}
     >
       {$page.data.internationalization?.layout}
@@ -714,42 +692,8 @@
   <MovePane />
 {/if}
 
-{#if showLayoutAction}
-  <form
-    id="page-layout"
-    class="page-layout"
-    method="POST"
-    on:submit|preventDefault={handleLayout}
-  >
-    <select name="layout" class="page-layout-select" value={$page.data.page.layout}>
-      <option value={null}
-        >{$page.data.internationalization?.["wiki-page-layout.default"]}</option
-      >
-      {#each Object.values(Layout) as layoutOption}
-        <option value={layoutOption}
-          >{$page.data.internationalization?.[`wiki-page-layout.${layoutOption}`]}</option
-        >
-      {/each}
-    </select>
-    <div class="action-row page-layout-actions">
-      <button
-        class="action-button page-layout-button button-cancel clickable"
-        type="button"
-        on:click|stopPropagation={() => {
-          showLayoutAction = false
-        }}
-      >
-        {$page.data.internationalization?.cancel}
-      </button>
-      <button
-        class="action-button page-layout-button button-save clickable"
-        type="submit"
-        on:click|stopPropagation
-      >
-        {$page.data.internationalization?.save}
-      </button>
-    </div>
-  </form>
+{#if $pagePaneState === PagePane.Layout}
+  <LayoutPane />
 {/if}
 
 {#if showParentAction}
@@ -1392,7 +1336,6 @@
   }
 
   .editor,
-  .page-layout,
   .page-parent,
   .file-upload,
   .file-edit,
