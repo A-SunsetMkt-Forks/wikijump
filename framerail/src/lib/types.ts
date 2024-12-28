@@ -10,5 +10,6 @@ export enum PagePane {
   None,
   Layout,
   Move,
-  Parent
+  Parent,
+  Vote
 }
