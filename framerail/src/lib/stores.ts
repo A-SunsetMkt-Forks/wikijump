@@ -8,4 +8,4 @@ export const useErrorPopup = () =>
     data: null
   })
 
-export const usePagePaneState = () => useWritable<PagePane>("pagePane", PagePane.None)
+export const usePagePaneState = () => useWritable("pagePane", PagePane.None)
