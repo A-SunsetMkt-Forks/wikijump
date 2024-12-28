@@ -4,11 +4,10 @@
   import { onMount } from "svelte"
   import { useErrorPopup, usePagePaneState } from "$lib/stores"
   import { PagePane } from "$lib/types"
-  import { LayoutPane, MovePane } from "."
+  import { LayoutPane, MovePane, ParentPane } from "."
   let showErrorPopup = useErrorPopup()
   let pagePaneState = usePagePaneState()
 
-  let showParentAction = false
   let showHistory = false
   let showSource = false
   let showRevision = false
@@ -25,7 +24,6 @@
   let revision: Record<string, any> = {}
   let voteMap: Map<number, Record<string, any>> = new Map()
   let voteRating: number
-  let parents = ""
   let fileMap: Map<number, Record<string, any>> = new Map()
   let filesUpload: FileList
   let filesEditElem: HTMLInputElement
@@ -88,62 +86,6 @@
       goto(`/${$page.data.page.slug}`, {
         noScroll: true
       })
-    }
-  }
-
-  async function getParents() {
-    let fdata = new FormData()
-    fdata.set("site-id", $page.data.site.site_id)
-    fdata.set("page-id", $page.data.page.page_id)
-    let res = await fetch(`/${$page.data.page.slug}/parent-get`, {
-      method: "POST",
-      body: fdata
-    }).then((res) => res.json())
-    if (res?.message) {
-      showErrorPopup.set({
-        state: true,
-        message: res.message,
-        data: res.data
-      })
-    } else {
-      parents = res.join(" ")
-      showParentAction = true
-    }
-  }
-
-  async function setParents() {
-    let form = document.getElementById("page-parent")
-    let fdata = new FormData(form)
-    fdata.set("site-id", $page.data.site.site_id)
-    fdata.set("page-id", $page.data.page.page_id)
-    let newParents = (fdata.get("parents")?.toString() ?? "").split(" ").filter((p) => p)
-    let oldParents = parents.split(" ").filter((p) => p)
-    let added: string[] = []
-    let removed: string[] = []
-    let common: string[] = []
-    for (let i = 0; i < oldParents.length; i++) {
-      if (!newParents.includes(oldParents[i])) removed.push(oldParents[i])
-      else common.push(oldParents[i])
-    }
-    for (let i = 0; i < newParents.length; i++) {
-      if (!common.includes(newParents[i])) added.push(newParents[i])
-    }
-    if (added.length) fdata.set("add-parents", added.join(" "))
-    if (removed.length) fdata.set("remove-parents", removed.join(" "))
-
-    let res = await fetch(`/${$page.data.page.slug}/parent-set`, {
-      method: "POST",
-      body: fdata
-    }).then((res) => res.json())
-    if (res?.message) {
-      showErrorPopup.set({
-        state: true,
-        message: res.message,
-        data: res.data
-      })
-    } else {
-      showParentAction = false
-      invalidateAll()
     }
   }
 
@@ -629,7 +571,9 @@
     <button
       class="action-button editor-button button-parents clickable"
       type="button"
-      on:click={getParents}
+      on:click={() => {
+        pagePaneState.set(PagePane.Parent)
+      }}
     >
       {$page.data.internationalization?.parents}
     </button>
@@ -690,45 +634,10 @@
 
 {#if $pagePaneState === PagePane.Move}
   <MovePane />
-{/if}
-
-{#if $pagePaneState === PagePane.Layout}
+{:else if $pagePaneState === PagePane.Layout}
   <LayoutPane />
-{/if}
-
-{#if showParentAction}
-  <form
-    id="page-parent"
-    class="page-parent"
-    method="POST"
-    on:submit|preventDefault={setParents}
-  >
-    <input
-      name="parents"
-      class="page-parent-new-parents"
-      placeholder={$page.data.internationalization?.parents}
-      type="text"
-      value={parents}
-    />
-    <div class="action-row page-parent-actions">
-      <button
-        class="action-button page-parent-button button-cancel clickable"
-        type="button"
-        on:click|stopPropagation={() => {
-          showParentAction = false
-        }}
-      >
-        {$page.data.internationalization?.cancel}
-      </button>
-      <button
-        class="action-button page-parent-button button-save clickable"
-        type="submit"
-        on:click|stopPropagation
-      >
-        {$page.data.internationalization?.save}
-      </button>
-    </div>
-  </form>
+{:else if $pagePaneState === PagePane.Parent}
+  <ParentPane />
 {/if}
 
 {#if showHistory}
@@ -1336,7 +1245,6 @@
   }
 
   .editor,
-  .page-parent,
   .file-upload,
   .file-edit,
   .file-move,

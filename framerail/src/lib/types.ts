@@ -9,5 +9,6 @@ export enum Layout {
 export enum PagePane {
   None,
   Layout,
-  Move
+  Move,
+  Parent
 }
