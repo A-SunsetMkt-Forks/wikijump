@@ -127,6 +127,9 @@ jobs:
             deepwell/target
           key: ${{ runner.os }}-deepwell-lint-${{ hashFiles('deepwell/**/Cargo.toml') }}
 
+      - name: System Dependencies
+        run: sudo apt update && sudo apt install libmagic-dev
+
       - name: Rustfmt
         run: cd deepwell && cargo fmt --all -- --check
 
