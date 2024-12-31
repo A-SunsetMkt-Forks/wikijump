@@ -1413,10 +1413,10 @@
               {revisionItem.name}
             </div>
             <div class="revision-attribute mime">
-              {revisionItem.mime_hint}
+              {revisionItem.mime}
             </div>
             <div class="revision-attribute size">
-              {revisionItem.size_hint}
+              {revisionItem.size}
             </div>
             <div class="revision-attribute comments">
               {revisionItem.comments}

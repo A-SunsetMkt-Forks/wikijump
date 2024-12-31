@@ -85,8 +85,8 @@ impl FileService {
         // Finish blob upload
         let FinalizeBlobUploadOutput {
             s3_hash,
-            mime: mime_hint,
-            size: size_hint,
+            mime,
+            size,
             created: blob_created,
         } = match direct_upload {
             None => {
@@ -120,8 +120,8 @@ impl FileService {
                 user_id,
                 name,
                 s3_hash,
-                size_hint,
-                mime_hint,
+                size,
+                mime,
                 blob_created,
                 licensing,
                 revision_comments,
@@ -184,8 +184,8 @@ impl FileService {
             Maybe::Set(ref id) => {
                 let FinalizeBlobUploadOutput {
                     s3_hash,
-                    mime: mime_hint,
-                    size: size_hint,
+                    mime,
+                    size,
                     created: blob_created,
                 } = match direct_upload {
                     Maybe::Unset => {
@@ -201,8 +201,8 @@ impl FileService {
 
                 Maybe::Set(FileBlob {
                     s3_hash,
-                    mime_hint,
-                    size_hint,
+                    mime,
+                    size,
                     blob_created,
                 })
             }
@@ -528,8 +528,8 @@ impl FileService {
         let FileRevisionModel {
             name,
             s3_hash,
-            mime_hint,
-            size_hint,
+            mime,
+            size,
             licensing,
             ..
         } = target_revision;
@@ -552,8 +552,8 @@ impl FileService {
 
         let blob = FileBlob {
             s3_hash: slice_to_blob_hash(&s3_hash),
-            mime_hint,
-            size_hint,
+            mime,
+            size,
             // in a rollback, by definition the blob was already uploaded
             blob_created: false,
         };

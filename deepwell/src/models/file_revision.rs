@@ -22,8 +22,8 @@ pub struct Model {
     #[sea_orm(column_type = "VarBinary(StringLen::None)")]
     pub s3_hash: Vec<u8>,
     #[sea_orm(column_type = "Text")]
-    pub mime_hint: String,
-    pub size_hint: i64,
+    pub mime: String,
+    pub size: i64,
     pub licensing: Json,
     pub changes: Vec<String>,
     #[sea_orm(column_type = "Text")]
