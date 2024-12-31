@@ -41,6 +41,7 @@
   function navigateEdit() {
     let options: string[] = []
     if ($page.data.options.no_render) options.push("norender")
+    if ($page.data.options.no_redirect) options.push("noredirect")
     options = options.map((opt) => `/${opt}`)
     goto(`/${$page.data.page.slug}${options.join("")}/edit`, {
       noScroll: true
