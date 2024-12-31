@@ -89,8 +89,8 @@ impl FileRevisionService {
         let FileRevisionModel {
             mut name,
             mut s3_hash,
-            mut mime_hint,
-            mut size_hint,
+            mut mime,
+            mut size,
             mut licensing,
             ..
         } = previous;
@@ -116,13 +116,13 @@ impl FileRevisionService {
 
         if let Maybe::Set(new_blob) = body.blob {
             if s3_hash != new_blob.s3_hash
-                || size_hint != new_blob.size_hint
-                || mime_hint != new_blob.mime_hint
+                || size != new_blob.size
+                || mime != new_blob.mime
             {
                 changes.push(str!("blob"));
                 s3_hash = new_blob.s3_hash.to_vec();
-                size_hint = new_blob.size_hint;
-                mime_hint = new_blob.mime_hint;
+                size = new_blob.size;
+                mime = new_blob.mime;
                 blob_created = Maybe::Set(new_blob.blob_created);
             }
         }
@@ -144,8 +144,8 @@ impl FileRevisionService {
         // Validate inputs
         // (Note that filename checks are done in FileService)
 
-        if mime_hint.is_empty() {
-            error!("MIME type hint is empty");
+        if mime.is_empty() {
+            error!("MIME type is empty");
             return Err(Error::FileMimeEmpty);
         }
 
@@ -165,8 +165,8 @@ impl FileRevisionService {
             user_id: Set(user_id),
             name: Set(name),
             s3_hash: Set(s3_hash.to_vec()),
-            size_hint: Set(size_hint),
-            mime_hint: Set(mime_hint),
+            size: Set(size),
+            mime: Set(mime),
             licensing: Set(licensing),
             changes: Set(changes),
             comments: Set(revision_comments),
@@ -194,8 +194,8 @@ impl FileRevisionService {
             user_id,
             name,
             s3_hash,
-            size_hint,
-            mime_hint,
+            size,
+            mime,
             blob_created,
             licensing,
             revision_comments,
@@ -218,8 +218,8 @@ impl FileRevisionService {
             user_id: Set(user_id),
             name: Set(name),
             s3_hash: Set(s3_hash.to_vec()),
-            mime_hint: Set(mime_hint),
-            size_hint: Set(size_hint),
+            mime: Set(mime),
+            size: Set(size),
             licensing: Set(licensing),
             changes: Set(ALL_CHANGES.clone()),
             comments: Set(revision_comments),
@@ -263,8 +263,8 @@ impl FileRevisionService {
         let FileRevisionModel {
             name,
             mut s3_hash,
-            mime_hint,
-            size_hint,
+            mime,
+            size,
             licensing,
             ..
         } = previous;
@@ -291,8 +291,8 @@ impl FileRevisionService {
             user_id: Set(user_id),
             name: Set(name),
             s3_hash: Set(s3_hash),
-            mime_hint: Set(mime_hint),
-            size_hint: Set(size_hint),
+            mime: Set(mime),
+            size: Set(size),
             licensing: Set(licensing),
             changes: Set(vec![]),
             comments: Set(revision_comments),
@@ -344,8 +344,8 @@ impl FileRevisionService {
         let FileRevisionModel {
             name: old_name,
             s3_hash,
-            mime_hint,
-            size_hint,
+            mime,
+            size,
             licensing,
             ..
         } = previous;
@@ -379,8 +379,8 @@ impl FileRevisionService {
             user_id: Set(user_id),
             name: Set(new_name),
             s3_hash: Set(s3_hash),
-            mime_hint: Set(mime_hint),
-            size_hint: Set(size_hint),
+            mime: Set(mime),
+            size: Set(size),
             licensing: Set(licensing),
             changes: Set(changes),
             comments: Set(revision_comments),

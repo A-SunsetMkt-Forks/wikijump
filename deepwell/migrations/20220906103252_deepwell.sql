@@ -492,8 +492,8 @@ CREATE TABLE file_revision (
     user_id BIGINT NOT NULL REFERENCES "user"(user_id),
     name TEXT NOT NULL,
     s3_hash BYTEA NOT NULL,
-    mime_hint TEXT NOT NULL,
-    size_hint BIGINT NOT NULL,
+    mime TEXT NOT NULL,
+    size BIGINT NOT NULL,
     licensing JSON NOT NULL,
     changes TEXT[] NOT NULL DEFAULT '{}', -- List of changes in this revision
     comments TEXT NOT NULL,
@@ -501,7 +501,7 @@ CREATE TABLE file_revision (
 
     CHECK (length(name) > 0 AND length(name) < 256),  -- Constrain filename length
     CHECK (length(s3_hash) = 64),                     -- SHA-512 hash size
-    CHECK (mime_hint != ''),                          -- Should have a MIME hint
+    CHECK (mime != ''),                               -- Should have a MIME hint
 
     -- Ensure array only contains valid values
     -- Change this to use the 'page_revision_change' type later
