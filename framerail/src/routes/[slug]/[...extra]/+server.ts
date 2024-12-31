@@ -106,12 +106,15 @@ export async function POST(event) {
         revisionNumber,
         comments
       )
-    } else if (extra.includes("vote")) {
-      let action = data.get("action")?.toString()
+    } else if (extra.includes("vote-get")) {
+      res = await page.pageVoteList(siteId, pageId)
+    } else if (extra.includes("vote-cast")) {
       let valueStr = data.get("value")?.toString()
       let value = valueStr ? parseInt(valueStr) : null
 
-      res = await page.pageVote(siteId, pageId, session?.user_id, action, value)
+      res = await page.pageVoteCast(siteId, pageId, session?.user_id, value)
+    } else if (extra.includes("vote-cancel")) {
+      res = await page.pageVoteRemove(siteId, pageId, session?.user_id)
     } else if (extra.includes("layout")) {
       let layout = data.get("layout")?.toString().trim() ?? null
 

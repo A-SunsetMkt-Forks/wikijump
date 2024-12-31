@@ -6,3 +6,12 @@ export enum Layout {
   WIKIDOT = "wikidot",
   WIKIJUMP = "wikijump"
 }
+export enum PagePane {
+  None,
+  File,
+  History,
+  Layout,
+  Move,
+  Parent,
+  Vote
+}

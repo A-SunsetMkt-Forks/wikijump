@@ -122,35 +122,42 @@ export async function pageRollback(
   })
 }
 
-export async function pageVote(
+export async function pageVoteList(
+  siteId: number,
+  pageId: Optional<number>
+): Promise<object> {
+  return client.request("vote_list", {
+    type: "Page",
+    id: pageId,
+    deleted: false,
+    disabled: false,
+    start_id: 0,
+    limit: 100
+  })
+}
+
+export async function pageVoteCast(
   siteId: number,
   pageId: Optional<number>,
   userId: number,
-  action: String,
   value: number
 ): Promise<object> {
-  let actionLower = action.toLowerCase()
-  if (actionLower === "set") {
-    return client.request("vote_set", {
-      page_id: pageId,
-      user_id: userId,
-      value
-    })
-  } else if (actionLower === "remove") {
-    return client.request("vote_remove", {
-      page_id: pageId,
-      user_id: userId
-    })
-  } else if (actionLower === "get_list") {
-    return client.request("vote_list", {
-      type: "Page",
-      id: pageId,
-      deleted: false,
-      disabled: false,
-      start_id: 0,
-      limit: 100
-    })
-  }
+  return client.request("vote_set", {
+    page_id: pageId,
+    user_id: userId,
+    value
+  })
+}
+
+export async function pageVoteRemove(
+  siteId: number,
+  pageId: Optional<number>,
+  userId: number
+): Promise<object> {
+  return client.request("vote_remove", {
+    page_id: pageId,
+    user_id: userId
+  })
 }
 
 export async function pageRerender(siteId: number, pageId: number): Promise<object> {
