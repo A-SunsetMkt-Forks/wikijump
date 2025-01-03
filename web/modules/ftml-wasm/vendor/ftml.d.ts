@@ -1,342 +1,137 @@
 /* tslint:disable */
 /* eslint-disable */
-/**
-* @returns {string}
-*/
-export function version(): string;
-/**
-* @param {Tokenization} tokens
-* @param {PageInfo} page_info
-* @param {WikitextSettings} settings
-* @returns {ParseOutcome}
-*/
 export function parse(tokens: Tokenization, page_info: PageInfo, settings: WikitextSettings): ParseOutcome;
-/**
-* @param {string} text
-* @returns {string}
-*/
-export function preprocess(text: string): string;
-/**
-* @param {SyntaxTree} syntax_tree
-* @param {PageInfo} page_info
-* @param {WikitextSettings} settings
-* @returns {string}
-*/
-export function render_text(syntax_tree: SyntaxTree, page_info: PageInfo, settings: WikitextSettings): string;
-/**
-* @param {SyntaxTree} syntax_tree
-* @param {PageInfo} page_info
-* @param {WikitextSettings} settings
-* @returns {HtmlOutput}
-*/
 export function render_html(syntax_tree: SyntaxTree, page_info: PageInfo, settings: WikitextSettings): HtmlOutput;
-/**
-* @param {string} text
-* @returns {Tokenization}
-*/
+export function render_text(syntax_tree: SyntaxTree, page_info: PageInfo, settings: WikitextSettings): string;
 export function tokenize(text: string): Tokenization;
-
-
-export interface IElement {
-    element: string;
-    data?: any;
-}
-
-export interface ISyntaxTree {
-    elements: IElement[];
-    table_of_contents: IElement[];
-    footnotes: IElement[][];
-}
-
-export interface IParseError {
-    token: string;
-    rule: string;
-    span: {
-        start: number;
-        end: number;
-    };
-    kind: string;
-}
-
-
-
-
-
-export interface IWikitextSettings {
-    mode: WikitextMode;
-    enable_page_syntax: boolean;
-    use_true_ids: boolean;
-    allow_local_paths: boolean;
-}
-
-export type WikitextMode =
-    | 'page'
-    | 'draft'
-    | 'forum-post'
-    | 'direct-message'
-    | 'list'
-
-
-
-
-
-export interface IPageInfo {
-    page: string;
-    category: string | null;
-    site: string;
-    title: string;
-    alt_title: string | null;
-    rating: number;
-    tags: string[];
-    language: string;
-}
-
-
-
-
-
-export interface IHtmlOutput {
-    body: string;
-    style: string;
-    meta: IHtmlMeta[];
-}
-
-export interface IHtmlMeta {
-    tag_type: string;
-    name: string;
-    value: string;
-}
-
-export interface IBacklinks {
-    included_pages: string[];
-    internal_links: string[];
-    external_links: string[];
-}
-
-
-
-
-
-export interface IToken {
-    token: string;
-    slice: string;
-    span: {
-        start: number;
-        end: number;
-    };
-}
-
-
-
-/**
-*/
+export function version(): string;
+export function preprocess(text: string): string;
 export class HtmlOutput {
+  private constructor();
   free(): void;
-/**
-* @returns {HtmlOutput}
-*/
   copy(): HtmlOutput;
-/**
-* @returns {string}
-*/
   body(): string;
-/**
-* @returns {IHtmlMeta[]}
-*/
-  html_meta(): IHtmlMeta[];
-/**
-* @returns {IBacklinks}
-*/
-  backlinks(): IBacklinks;
+  html_meta(): any;
+  backlinks(): any;
 }
-/**
-*/
 export class PageInfo {
   free(): void;
-/**
-* @returns {PageInfo}
-*/
   copy(): PageInfo;
-/**
-* @param {IPageInfo} object
-*/
-  constructor(object: IPageInfo);
-/**
-*/
-  readonly alt_title: string | undefined;
-/**
-*/
-  readonly category: string | undefined;
-/**
-*/
-  readonly language: string;
-/**
-*/
+  constructor(info: any);
   readonly page: string;
-/**
-*/
-  readonly rating: number;
-/**
-*/
+  readonly category: string | undefined;
   readonly site: string;
-/**
-*/
-  readonly tags: string[];
-/**
-*/
   readonly title: string;
+  readonly alt_title: string | undefined;
+  readonly score: number;
+  readonly tags: any;
+  readonly language: string;
 }
-/**
-*/
 export class ParseOutcome {
+  private constructor();
   free(): void;
-/**
-* @returns {ParseOutcome}
-*/
   copy(): ParseOutcome;
-/**
-* @returns {SyntaxTree}
-*/
   syntax_tree(): SyntaxTree;
-/**
-* @returns {IParseError[]}
-*/
-  errors(): IParseError[];
+  errors(): any;
 }
-/**
-*/
 export class SyntaxTree {
+  private constructor();
   free(): void;
-/**
-* @returns {SyntaxTree}
-*/
   copy(): SyntaxTree;
-/**
-* @returns {ISyntaxTree}
-*/
-  data(): ISyntaxTree;
+  data(): any;
 }
-/**
-*/
 export class Tokenization {
+  private constructor();
   free(): void;
-/**
-* @returns {Tokenization}
-*/
   copy(): Tokenization;
-/**
-* @returns {string}
-*/
   text(): string;
-/**
-* @returns {IToken[]}
-*/
-  tokens(): IToken[];
+  tokens(): any;
 }
-/**
-*/
 export class Utf16IndexMap {
   free(): void;
-/**
-* @param {string} text
-*/
   constructor(text: string);
-/**
-* @returns {Utf16IndexMap}
-*/
   copy(): Utf16IndexMap;
-/**
-* @param {number} index
-* @returns {number}
-*/
   get_index(index: number): number;
 }
-/**
-*/
 export class WikitextSettings {
   free(): void;
-/**
-* @returns {WikitextSettings}
-*/
   copy(): WikitextSettings;
-/**
-* @param {IWikitextSettings} object
-*/
-  constructor(object: IWikitextSettings);
-/**
-* @param {string} mode
-* @returns {WikitextSettings}
-*/
-  static from_mode(mode: string): WikitextSettings;
+  constructor(settings: any);
+  static from_mode(mode: string, layout: string): WikitextSettings;
 }
 
 export type InitInput = RequestInfo | URL | Response | BufferSource | WebAssembly.Module;
 
 export interface InitOutput {
   readonly memory: WebAssembly.Memory;
-  readonly version: (a: number) => void;
-  readonly __wbg_parseoutcome_free: (a: number) => void;
+  readonly __wbg_pageinfo_free: (a: number, b: number) => void;
+  readonly pageinfo_copy: (a: number) => number;
+  readonly pageinfo_new: (a: any) => [number, number, number];
+  readonly pageinfo_page: (a: number) => [number, number];
+  readonly pageinfo_category: (a: number) => [number, number];
+  readonly pageinfo_site: (a: number) => [number, number];
+  readonly pageinfo_title: (a: number) => [number, number];
+  readonly pageinfo_alt_title: (a: number) => [number, number];
+  readonly pageinfo_score: (a: number) => number;
+  readonly pageinfo_tags: (a: number) => [number, number, number];
+  readonly pageinfo_language: (a: number) => [number, number];
+  readonly __wbg_parseoutcome_free: (a: number, b: number) => void;
   readonly parseoutcome_copy: (a: number) => number;
   readonly parseoutcome_syntax_tree: (a: number) => number;
-  readonly parseoutcome_errors: (a: number, b: number) => void;
-  readonly __wbg_syntaxtree_free: (a: number) => void;
-  readonly syntaxtree_data: (a: number, b: number) => void;
-  readonly parse: (a: number, b: number, c: number, d: number) => void;
-  readonly __wbg_wikitextsettings_free: (a: number) => void;
-  readonly wikitextsettings_copy: (a: number) => number;
-  readonly wikitextsettings_new: (a: number, b: number) => void;
-  readonly wikitextsettings_from_mode: (a: number, b: number, c: number) => void;
+  readonly parseoutcome_errors: (a: number) => [number, number, number];
+  readonly __wbg_syntaxtree_free: (a: number, b: number) => void;
   readonly syntaxtree_copy: (a: number) => number;
-  readonly __wbg_pageinfo_free: (a: number) => void;
-  readonly pageinfo_copy: (a: number) => number;
-  readonly pageinfo_new: (a: number, b: number) => void;
-  readonly pageinfo_page: (a: number, b: number) => void;
-  readonly pageinfo_category: (a: number, b: number) => void;
-  readonly pageinfo_site: (a: number, b: number) => void;
-  readonly pageinfo_title: (a: number, b: number) => void;
-  readonly pageinfo_alt_title: (a: number, b: number) => void;
-  readonly pageinfo_rating: (a: number) => number;
-  readonly pageinfo_tags: (a: number, b: number) => void;
-  readonly pageinfo_language: (a: number, b: number) => void;
-  readonly preprocess: (a: number, b: number, c: number) => void;
-  readonly render_text: (a: number, b: number, c: number, d: number) => void;
-  readonly __wbg_htmloutput_free: (a: number) => void;
+  readonly syntaxtree_data: (a: number) => [number, number, number];
+  readonly parse: (a: number, b: number, c: number) => [number, number, number];
+  readonly __wbg_htmloutput_free: (a: number, b: number) => void;
   readonly htmloutput_copy: (a: number) => number;
-  readonly htmloutput_body: (a: number, b: number) => void;
-  readonly htmloutput_html_meta: (a: number, b: number) => void;
-  readonly htmloutput_backlinks: (a: number, b: number) => void;
+  readonly htmloutput_body: (a: number) => [number, number];
+  readonly htmloutput_html_meta: (a: number) => [number, number, number];
+  readonly htmloutput_backlinks: (a: number) => [number, number, number];
   readonly render_html: (a: number, b: number, c: number) => number;
-  readonly __wbg_tokenization_free: (a: number) => void;
+  readonly render_text: (a: number, b: number, c: number) => [number, number];
+  readonly __wbg_tokenization_free: (a: number, b: number) => void;
   readonly tokenization_copy: (a: number) => number;
-  readonly tokenization_text: (a: number, b: number) => void;
-  readonly tokenization_tokens: (a: number, b: number) => void;
+  readonly tokenization_text: (a: number) => [number, number];
+  readonly tokenization_tokens: (a: number) => [number, number, number];
   readonly tokenize: (a: number, b: number) => number;
-  readonly __wbg_utf16indexmap_free: (a: number) => void;
+  readonly __wbg_utf16indexmap_free: (a: number, b: number) => void;
   readonly utf16indexmap_new: (a: number, b: number) => number;
-  readonly utf16indexmap_get_index: (a: number, b: number, c: number) => void;
   readonly utf16indexmap_copy: (a: number) => number;
-  readonly __wbindgen_malloc: (a: number) => number;
-  readonly __wbindgen_realloc: (a: number, b: number, c: number) => number;
-  readonly __wbindgen_add_to_stack_pointer: (a: number) => number;
-  readonly __wbindgen_free: (a: number, b: number) => void;
+  readonly utf16indexmap_get_index: (a: number, b: number) => [number, number, number];
+  readonly __wbg_wikitextsettings_free: (a: number, b: number) => void;
+  readonly wikitextsettings_copy: (a: number) => number;
+  readonly wikitextsettings_new: (a: any) => [number, number, number];
+  readonly wikitextsettings_from_mode: (a: number, b: number, c: number, d: number) => [number, number, number];
+  readonly version: () => [number, number];
+  readonly preprocess: (a: number, b: number) => [number, number];
+  readonly __wbindgen_malloc: (a: number, b: number) => number;
+  readonly __wbindgen_realloc: (a: number, b: number, c: number, d: number) => number;
   readonly __wbindgen_exn_store: (a: number) => void;
+  readonly __externref_table_alloc: () => number;
+  readonly __wbindgen_export_4: WebAssembly.Table;
+  readonly __externref_table_dealloc: (a: number) => void;
+  readonly __wbindgen_free: (a: number, b: number, c: number) => void;
+  readonly __wbindgen_start: () => void;
 }
 
+export type SyncInitInput = BufferSource | WebAssembly.Module;
 /**
-* Synchronously compiles the given `bytes` and instantiates the WebAssembly module.
+* Instantiates the given `module`, which can either be bytes or
+* a precompiled `WebAssembly.Module`.
 *
-* @param {BufferSource} bytes
+* @param {{ module: SyncInitInput }} module - Passing `SyncInitInput` directly is deprecated.
 *
 * @returns {InitOutput}
 */
-export function initSync(bytes: BufferSource): InitOutput;
+export function initSync(module: { module: SyncInitInput } | SyncInitInput): InitOutput;
 
 /**
 * If `module_or_path` is {RequestInfo} or {URL}, makes a request and
 * for everything else, calls `WebAssembly.instantiate` directly.
 *
-* @param {InitInput | Promise<InitInput>} module_or_path
+* @param {{ module_or_path: InitInput | Promise<InitInput> }} module_or_path - Passing `InitInput` directly is deprecated.
 *
 * @returns {Promise<InitOutput>}
 */
-export default function init (module_or_path: InitInput | Promise<InitInput>): Promise<InitOutput>;
+export default function __wbg_init (module_or_path: { module_or_path: InitInput | Promise<InitInput> } | InitInput | Promise<InitInput>): Promise<InitOutput>;
