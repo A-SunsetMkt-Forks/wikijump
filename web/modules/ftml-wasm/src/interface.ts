@@ -15,6 +15,7 @@ export type WikitextSettings = FTML.IWikitextSettings
 export type ParseResult = { ast: SyntaxTree; errors: FtmlError[] }
 
 export type RenderSettings = WikitextMode | WikitextSettings
+export type Layout = "wikidot" | "wikijump"
 
 export interface RenderedHTML {
   html: string
@@ -40,9 +41,9 @@ export type UTF16IndexMapFunction = {
   free: () => void
 }
 
-function makeSettings(settings: RenderSettings): FTML.WikitextSettings {
+function makeSettings(settings: RenderSettings, layout: Layout): FTML.WikitextSettings {
   if (typeof settings === "string") {
-    return FTML.WikitextSettings.from_mode(settings)
+    return FTML.WikitextSettings.from_mode(settings, layout)
   } else {
     return new FTML.WikitextSettings(settings)
   }
@@ -54,7 +55,7 @@ export function makeInfo(partial?: PartialInfo): PageInfo {
     alt_title: null,
     category: null,
     language: "default",
-    rating: 0,
+    score: 0,
     page: "unknown",
     site: "www",
     tags: [],
@@ -106,13 +107,14 @@ export function tokenize(str: string) {
  * @param str - The wikitext to parse.
  * @param info - The page info to use.
  * @param mode - The wikitext rendering mode to use.
+ * @param layout - The html layout to use.
  */
-export function parse(str: string, info?: PartialInfo, mode: RenderSettings = "page") {
+export function parse(str: string, info?: PartialInfo, mode: RenderSettings = "page", layout: Layout = "wikijump") {
   if (!ready) throw new Error("FTML wasn't ready yet!")
   try {
     const tokenized = trk(FTML.tokenize(str))
     const pageInfo = trk(new FTML.PageInfo(makeInfo(info)))
-    const settings = trk(makeSettings(mode))
+    const settings = trk(makeSettings(mode, layout))
     const parsed = trk(FTML.parse(tokenized, pageInfo, settings))
     const tree = trk(parsed.syntax_tree())
     const ast = tree.data()
@@ -133,13 +135,14 @@ export function parse(str: string, info?: PartialInfo, mode: RenderSettings = "p
  * @param str - The wikitext to get the errors of.
  * @param info - The page info to use.
  * @param mode - The wikitext rendering mode to use.
+ * @param layout - The html layout to use.
  */
-export function errors(str: string, info?: PartialInfo, mode: RenderSettings = "page") {
+export function errors(str: string, info?: PartialInfo, mode: RenderSettings = "page", layout: Layout = "wikijump") {
   if (!ready) throw new Error("FTML wasn't ready yet!")
   try {
     const pageInfo = trk(new FTML.PageInfo(makeInfo(info)))
     const tokenized = trk(FTML.tokenize(str))
-    const settings = trk(makeSettings(mode))
+    const settings = trk(makeSettings(mode, layout))
     const parsed = trk(FTML.parse(tokenized, pageInfo, settings))
     const errors = parsed.errors()
 
@@ -158,17 +161,19 @@ export function errors(str: string, info?: PartialInfo, mode: RenderSettings = "
  * @param str - The wikitext to render.
  * @param info - The page info to use.
  * @param mode - The wikitext rendering mode to use.
+ * @param layout - The html layout to use.
  */
 export function renderHTML(
   str: string,
   info?: PartialInfo,
-  mode: RenderSettings = "page"
+  mode: RenderSettings = "page",
+  layout: Layout = "wikijump"
 ): RenderedHTML {
   if (!ready) throw new Error("FTML wasn't ready yet!")
   try {
     const pageInfo = trk(new FTML.PageInfo(makeInfo(info)))
     const tokenized = trk(FTML.tokenize(str))
-    const settings = trk(makeSettings(mode))
+    const settings = trk(makeSettings(mode, layout))
     const parsed = trk(FTML.parse(tokenized, trk(pageInfo.copy()), trk(settings.copy())))
     const tree = trk(parsed.syntax_tree())
     const rendered = trk(FTML.render_html(tree, pageInfo, settings))
@@ -194,19 +199,21 @@ export function renderHTML(
  * @param str - The wikitext to render.
  * @param info - The page info to use.
  * @param mode - The wikitext rendering mode to use.
+ * @param layout - The html layout to use.
  */
 
 export function detailRenderHTML(
   str: string,
   info?: PartialInfo,
-  mode: RenderSettings = "page"
+  mode: RenderSettings = "page",
+  layout: Layout = "wikijump"
 ): DetailRenderedHTML {
   if (!ready) throw new Error("FTML wasn't ready yet!")
   try {
     const pageInfo = trk(new FTML.PageInfo(makeInfo(info)))
     const tokenized = trk(FTML.tokenize(str))
     const tokens = tokenized.tokens()
-    const settings = trk(makeSettings(mode))
+    const settings = trk(makeSettings(mode, layout))
     const parsed = trk(FTML.parse(tokenized, trk(pageInfo.copy()), trk(settings.copy())))
     const tree = trk(parsed.syntax_tree())
     const ast = tree.data()
@@ -232,17 +239,19 @@ export function detailRenderHTML(
  * @param str - The wikitext to render.
  * @param info - The page info to use.
  * @param mode - The wikitext rendering mode to use.
+ * @param layout - The html layout to use.
  */
 export function renderText(
   str: string,
   info?: PartialInfo,
-  mode: RenderSettings = "page"
+  mode: RenderSettings = "page",
+  layout: Layout = "wikijump"
 ) {
   if (!ready) throw new Error("FTML wasn't ready yet!")
   try {
     const pageInfo = trk(new FTML.PageInfo(makeInfo(info)))
     const tokenized = trk(FTML.tokenize(str))
-    const settings = trk(makeSettings(mode))
+    const settings = trk(makeSettings(mode, layout))
     const parsed = trk(FTML.parse(tokenized, trk(pageInfo.copy()), trk(settings.copy())))
     const tree = trk(parsed.syntax_tree())
     const text = FTML.render_text(tree, pageInfo, settings)
@@ -264,18 +273,20 @@ export function renderText(
  * @param str - The wikitext to render.
  * @param info - The page info to use.
  * @param mode - The wikitext rendering mode to use.
+ * @param layout - The html layout to use.
  */
 export function detailRenderText(
   str: string,
   info?: PartialInfo,
-  mode: RenderSettings = "page"
+  mode: RenderSettings = "page",
+  layout: Layout = "wikijump"
 ): DetailRenderedText {
   if (!ready) throw new Error("FTML wasn't ready yet!")
   try {
     const pageInfo = trk(new FTML.PageInfo(makeInfo(info)))
     const tokenized = trk(FTML.tokenize(str))
     const tokens = tokenized.tokens()
-    const settings = trk(makeSettings(mode))
+    const settings = trk(makeSettings(mode, layout))
     const parsed = trk(FTML.parse(tokenized, trk(pageInfo.copy()), trk(settings.copy())))
     const tree = trk(parsed.syntax_tree())
     const ast = tree.data()
