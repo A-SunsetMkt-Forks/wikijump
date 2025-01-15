@@ -117,17 +117,17 @@ impl DomainService {
     /// Gets the site corresponding with the given domain.
     #[inline]
     #[allow(dead_code)] // TEMP
-    pub async fn site_from_domain<'a>(
+    pub async fn site_from_domain(
         ctx: &ServiceContext<'_>,
-        domain: &'a str,
+        domain: &str,
     ) -> Result<SiteModel> {
         find_or_error!(Self::site_from_domain_optional(ctx, domain), CustomDomain)
     }
 
     /// Optional version of `site_from_domain()`.
-    pub async fn site_from_domain_optional<'a>(
+    pub async fn site_from_domain_optional(
         ctx: &ServiceContext<'_>,
-        domain: &'a str,
+        domain: &str,
     ) -> Result<Option<SiteModel>> {
         let result = Self::parse_site_from_domain(ctx, domain).await?;
         match result {
